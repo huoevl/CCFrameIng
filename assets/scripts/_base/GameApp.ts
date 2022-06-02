@@ -1,0 +1,28 @@
+import { AssetManager, assetManager, Component, instantiate, Prefab, _decorator } from 'cc';
+const { ccclass, property } = _decorator;
+
+@ccclass('GameApp')
+export class GameApp extends Component {
+    onLoad() {
+        assetManager.loadBundle("ui", (err, data: AssetManager.Bundle) => {
+            if (err) {
+                console.log("load bundle erro: ", err);
+                return;
+            }
+
+            let bound = assetManager.getBundle("ui");
+            if (!bound) {
+                console.error("没有bound")
+                return
+            }
+            bound.load("login/Login", Prefab, (err, data) => {
+                console.log(data);
+                var uiView = instantiate(data);
+                this.node.addChild(uiView);
+            })
+        });
+
+
+    }
+}
+

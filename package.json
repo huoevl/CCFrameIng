@@ -1,0 +1,17 @@
+{
+  "name": "CCTest01",
+  "uuid": "18655db9-d31c-47e6-ae58-ec6c53fde256",
+  "version": "3.5.0",
+  "_sourceId": "c30b28da-749e-479b-bcb6-cecd8d7be9e3",
+  "creator": {
+    "version": "3.5.0"
+  },
+  "scripts": {
+    "cmd_prefab":"ts-node ./cmd/cmd_prefab.ts"
+  },
+  "devDependencies": {
+    "@types/fs-extra": "^9.0.13",
+    "@types/node": "^17.0.38",
+    "fs-extra": "^10.1.0"
+  }
+}
