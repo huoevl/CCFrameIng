@@ -7,7 +7,7 @@
     "version": "3.5.0"
   },
   "scripts": {
-    "cmd_prefab":"ts-node ./cmd/cmd_prefab.ts"
+    "cmd_prefab": "ts-node ./cmd/cmd_prefab.ts"
   },
   "devDependencies": {
     "@types/fs-extra": "^9.0.13",
