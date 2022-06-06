@@ -1,6 +1,6 @@
 
-const fse: typeof import("fs-extra") = require("fs-extra");
-const path: typeof import("path") = require("path");
+const _fse: typeof import("fs-extra") = require("fs-extra");
+const _path: typeof import("path") = require("path");
 
 /** 配置信息 */
 interface ICfg {
@@ -55,6 +55,8 @@ interface IComp {
 interface IUIData {
     /** 界面名称 */
     UIName?: string;
+    path?: string;
+    fromCC?: { [type: string]: number };
     comps?: IComp[];
 }
 interface IUIMap {
@@ -72,19 +74,17 @@ const NeedType = {
     "cc.Label": true,
     "cc.Sprite": true,
 } as { [key: string]: boolean }
+
 class cmd_prefab {
     /** 配置 */
     cfg = {} as ICfg;
     /** 缓存 */
     data: IUIMap;
-    /** 要创建的类 */
-    clazz: string;
     constructor() {
         let itself = this;
         itself.data = {} as IUIMap;
-        itself.clazz = "";
         let cfg = itself.cfg;
-        cfg.ui_path = path.join(__dirname, "../assets/ui");
+        cfg.ui_path = _path.join(__dirname, "../assets/ui");
         itself.execute();
     }
     async execute() {
@@ -96,20 +96,20 @@ class cmd_prefab {
     readFile() {
         let itself = this;
         let ui_path = itself.cfg.ui_path;
-        let dirArr = fse.readdirSync(ui_path);
+        let dirArr = _fse.readdirSync(ui_path);
         for (let index = 0, len = dirArr.length; index < len; index++) {
-            let module_dir = path.join(ui_path, dirArr[index]);
-            if (fse.statSync(module_dir).isDirectory()) {
-                let files = fse.readdirSync(module_dir);
+            let module_dir = _path.join(ui_path, dirArr[index]);
+            if (_fse.statSync(module_dir).isDirectory()) {
+                let files = _fse.readdirSync(module_dir);
                 for (let indexPrf = 0, len = files.length; indexPrf < len; indexPrf++) {
                     let filename = files[indexPrf];
                     /** 后缀 */
-                    let houzui = path.extname(filename);
-                    let file_path = path.join(module_dir, filename);
+                    let houzui = _path.extname(filename);
+                    let file_path = _path.join(module_dir, filename);
                     if (houzui == ".prefab") {
-                        itself.parsePrefab(file_path);
+                        itself.parsePrefab(file_path, module_dir);
                     } else if (houzui == ".ts") {
-                        fse.unlinkSync(file_path);
+                        _fse.unlinkSync(file_path);
                     }
 
                 }
@@ -120,9 +120,9 @@ class cmd_prefab {
     }
 
     /** 解析预制体 */
-    parsePrefab(filepath: string) {
+    parsePrefab(filepath: string, dirPath: string) {
         let itself = this;
-        let json = fse.readFileSync(filepath, { encoding: "utf-8" });
+        let json = _fse.readFileSync(filepath, { encoding: "utf-8" });
         let jsonArr: INode[] | IComponent[] | IPrefab[] | IPrefabInfo[] = JSON.parse(json) || [];
         //先确定是不是prefab
         let prefab = jsonArr[0] as IPrefab;
@@ -133,6 +133,8 @@ class cmd_prefab {
         let prefabInfo = jsonArr[rootNode._prefab.__id__] as IPrefabInfo;
         let data = itself.data[prefabInfo.fileId] = itself.data[prefabInfo.fileId] || {} as IUIData;
         data.UIName = rootNode._name;
+        data.fromCC = { Component: 1 };
+        data.path = dirPath;
         let comps = data.comps = data.comps || [];
 
         /** 解析节点 */
@@ -144,12 +146,12 @@ class cmd_prefab {
             }
             let map = {} as IComp;
             map.name = name;
-            map.type = node.__type__;//可能是空节点
+            map.type = node.__type__.split(".")[1];//可能是空节点
             map.comps = [];
             dataComps.push(map);
             //一个节点，我们只需要其中一个正确的组件
             for (let index = 0, len = node._components.length; index < len; index++) {
-                let result = parseComp(map, name, index);
+                let result = parseComp(map, name, node._components[index].__id__);
                 if (result) {
                     break;
                 }
@@ -165,9 +167,9 @@ class cmd_prefab {
             if (!NeedType[comp.__type__]) {
                 return false;
             }
-            let map = {} as IComp;
-            map.name = name;
-            map.type = comp.__type__;
+            dataMap.name = name;
+            dataMap.type = comp.__type__.split(".")[1];
+            data.fromCC[dataMap.type] = 1;
             return true
         }
         for (let index = 0, len = rootNode._children.length; index < len; index++) {
@@ -179,7 +181,41 @@ class cmd_prefab {
     wirteToFile() {
         let itself = this;
         let data = itself.data;
-        let str = itself.clazz;
+        for (let key in data) {
+            let clazz = "";
+            let uiMap = data[key];
+            //写入import
+            let ccStr = "import { ";
+            for (let comp in uiMap.fromCC) {
+                ccStr += `${comp}, `;
+            }
+            ccStr = ccStr.substring(0, ccStr.length - 2);
+            ccStr += ' } from "cc";\n\n';
+            clazz += ccStr;
+            //写入class
+            clazz += `export class ${uiMap.UIName} extends Component {\n`;
+            clazz += `\tpublic static NAME = ${uiMap.UIName};\n`;
+            //属性
+            let propStr = "";
+            let constStr = "\tonLoad() {\n\t\tlet itself = this;\n";
+            let prop = function (comps: IComp[], parent: string) {
+                if (!comps || !comps.length) {
+                    return;
+                }
+
+                for (let index = 0, len = comps.length; index < len; index++) {
+                    let comp = comps[index];
+                    propStr += `\tpublic ${comp.name}: ${comp.type};\n`;
+                    constStr += `\t\t${parent}.${comp.name} = ${parent}.node.getChildByName("${comp.name}").getComponent(${comp.type});\n`;
+                    prop(comp.comps, `${parent}.${comp.name}`);
+                }
+            }
+            prop(uiMap.comps, "itself");
+
+            constStr += `\t}\n}`
+            clazz += `${propStr}\n${constStr}`;
+            _fse.writeFileSync(_path.join(uiMap.path, `${uiMap.UIName}.ts`), clazz);
+        }
 
     }
 }
