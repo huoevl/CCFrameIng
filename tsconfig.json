@@ -5,7 +5,8 @@
   /* Add your custom configuration here. */
   "compilerOptions": {
     "strict": false,
-    "noImplicitAny": true,
+    "suppressImplicitAnyIndexErrors": false,
+    "noImplicitAny": false,
     "types": [
       "node"
     ],
