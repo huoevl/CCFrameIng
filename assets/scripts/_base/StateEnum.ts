@@ -10,6 +10,8 @@ export enum EnumUpdataType {
     selPage,
     /** 状态 */
     state,
+    /** 删除控制器 */
+    delete,
 }
 /** 控制器名字 */
 export enum EnumCtrlName {

@@ -21,10 +21,10 @@ Enum(EnumStateName)
 export class StateCtrl extends Component {
     /** 选中的状态下标 */
     @property(EnumStateName)
-    private _selectedIndex: EnumStateName = -1;
+    private _selectedIndex: EnumStateName = 0;
     /** 状态名字列表 */
     @property
-    private _pageNames: string[] = [];
+    private _pageNames: string[] = ["0", "1"];
     /** 上一次选中的下标 */
     private _previousIndex: number = -1;
     /** 所有绑定选择器的节点 */
@@ -32,6 +32,7 @@ export class StateCtrl extends Component {
     private _allSelectors: { [uuid: string]: StateSelect } = {};
     /** 控制器名字 */
     @property(CCString)
+    // private _ctrlName: string = `ctrl_${Date.now().toString()}`;
     private _ctrlName: string = "";
     /** 是否正在改变 */
     changing?: boolean;
@@ -46,6 +47,15 @@ export class StateCtrl extends Component {
         if (!itself._allSelectors) {
             itself._allSelectors = {};
         }
+        if (itself.node["__CtrlName"] == void 0) {
+            itself.node["__CtrlName"] = 0;
+        }
+        itself._ctrlName = `c${itself.node["__CtrlName"]++}`;
+
+    }
+    onDestroy() {
+        let itself = this;
+        itself.updateState(EnumUpdataType.delete)
     }
 
     @property({ displayName: "name", tooltip: "控制器唯一名称" })
@@ -54,8 +64,9 @@ export class StateCtrl extends Component {
     }
     set ctrlName(value: string) {
         let itself = this;
+        let oldName = itself.ctrlName;
         itself._ctrlName = value;
-        itself.updateState(EnumUpdataType.name);
+        itself.updateState(EnumUpdataType.name, oldName);
     }
     @property({ type: CCString, tooltip: "状态数量。数组内容为状态名称" })
     get states() {
@@ -63,6 +74,10 @@ export class StateCtrl extends Component {
     }
     set states(value: string[]) {
         let itself = this;
+        if (value.length < 2) {
+            console.error("状态必须大于两个")
+            return;
+        }
         itself._pageNames = value;
         let stateMap: { [key: string]: boolean } = {};
         let array = value.map((val, i) => {
@@ -72,6 +87,7 @@ export class StateCtrl extends Component {
             stateMap[val] = true;
             return { name: val, value: i };
         })
+        itself.updateState(EnumUpdataType.selPage)
         CCClass.Attr.setClassAttr(itself, "selectedIndex", "enumList", array);
     }
 
@@ -93,16 +109,18 @@ export class StateCtrl extends Component {
         }
     }
     /** 更新状态 */
-    private updateState(type: EnumUpdataType) {
+    private updateState(type: EnumUpdataType, value?: any) {
         let itself = this;
         for (let uuid in itself._allSelectors) {
             let select = itself._allSelectors[uuid];
             if (type == EnumUpdataType.state) {
                 select.updateState(itself);
             } else if (type == EnumUpdataType.name) {
-                select.updateCtrlName(itself.node);
+                select.updateCtrlName(itself.node, value, itself.ctrlName);
             } else if (type == EnumUpdataType.selPage) {
                 select.updateCtrlPage(itself);
+            } else if (type == EnumUpdataType.delete) {
+                select.updateDelete(itself);
             }
         }
     }
