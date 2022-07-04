@@ -16,24 +16,26 @@ export enum EnumCtrlName {
 }
 /** 属性名 */
 export enum EnumPropName {
+    /** 不选择 */
+    Non = 0,
     /** 显示隐藏 */
-    Active = 0,
+    Active = 1,
     /** 位置 */
-    Position = 1,
+    Position = 2,
     /** 旋转 */
-    Rotation = 2,
+    Rotation = 3,
     /** 缩放 */
-    Scale = 3,
+    Scale = 4,
     /** 锚点 */
-    Anchor = 4,
+    Anchor = 5,
     /** 宽高 */
-    Size = 5,
+    Size = 6,
     /** 颜色 */
-    Color = 6,
+    Color = 7,
     /** 透明度 */
-    Opacity = 7,
+    Opacity = 8,
     /** 这是啥 */
-    Slew = 8,
+    Slew = 9,
     /** 文本 */
-    Lable = 9,
+    Lable = 10,
 }

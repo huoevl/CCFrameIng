@@ -1,13 +1,21 @@
+/**
+ * 一些问题：
+ * 1、节点没激活，不会执行：__preload()等生命周期函数
+ * 2、一个对象里又_开头的key，不会被序列化
+ * 3、
+ * 
+ * 
+ * 
+ * 
+ */
+
+
 import { CCClass, CCString, Component, Enum, _decorator } from 'cc';
 import { EnumStateName, EnumUpdataType } from './StateEnum';
 import { StateSelect } from './StateSelect';
 const { ccclass, property, executeInEditMode } = _decorator;
 
-
 Enum(EnumStateName)
-
-
-
 @ccclass('StateCtrl')
 @executeInEditMode(true)
 export class StateCtrl extends Component {
@@ -35,7 +43,9 @@ export class StateCtrl extends Component {
         })
         CCClass.Attr.setClassAttr(itself, "selectedIndex", "enumList", array);
         // console.log(CCClass.Attr.getClassAttrs(itself)[`selectedIndex${CCClass.Attr.DELIMETER}enumList`])
-        console.log(itself.states);
+        if (!itself._allSelectors) {
+            itself._allSelectors = {};
+        }
     }
 
     @property({ displayName: "name", tooltip: "控制器唯一名称" })
@@ -53,7 +63,6 @@ export class StateCtrl extends Component {
     }
     set states(value: string[]) {
         let itself = this;
-        console.log(value)
         itself._pageNames = value;
         let stateMap: { [key: string]: boolean } = {};
         let array = value.map((val, i) => {
@@ -77,7 +86,6 @@ export class StateCtrl extends Component {
                 throw "index out of bounds:（越界） " + value;
             }
             itself.changing = true;
-            console.log("上一次选中的", itself._previousIndex)
             itself._previousIndex = itself._selectedIndex;
             itself._selectedIndex = value;
             itself.updateState(EnumUpdataType.state);
@@ -87,7 +95,6 @@ export class StateCtrl extends Component {
     /** 更新状态 */
     private updateState(type: EnumUpdataType) {
         let itself = this;
-        console.log("更新状态6666666666", itself._allSelectors)
         for (let uuid in itself._allSelectors) {
             let select = itself._allSelectors[uuid];
             if (type == EnumUpdataType.state) {

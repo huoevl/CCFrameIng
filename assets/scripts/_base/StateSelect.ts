@@ -1,4 +1,4 @@
-import { CCBoolean, CCClass, CCInteger, CCString, Color, Component, Enum, Node, Vec2, Vec3, _decorator } from 'cc';
+import { CCClass, Color, Component, Enum, Node, Size, Vec2, Vec3, _decorator } from 'cc';
 import { StateCtrl } from './StateCtrl';
 import { EnumCtrlName, EnumPropName, EnumStateName } from './StateEnum';
 const { ccclass, property, executeInEditMode } = _decorator;
@@ -7,27 +7,16 @@ Enum(EnumStateName);
 Enum(EnumPropName);
 
 /** 属性类型 */
-const ConstProp = {
-    [EnumPropName.Active]: CCBoolean,
-    [EnumPropName.Position]: Vec3,
-    [EnumPropName.Rotation]: Vec3,
-    [EnumPropName.Scale]: Vec3,
-    [EnumPropName.Anchor]: Vec2,
-    [EnumPropName.Size]: Vec2,
-    [EnumPropName.Color]: Color,
-    [EnumPropName.Opacity]: CCInteger,
-    [EnumPropName.Lable]: CCString,
-}
-
-/** 属性类型 */
-type TPropValue = number | boolean | Vec3 | Vec2 | Color | string;
+type TPropValue = number | boolean | string | Vec3 | Vec2 | Color | Size;
 type TProp = {
-    __lastProp__?: number;
+    $$lastProp$$?: number;
     [key: number]: TPropValue,
 }
 type TPage = {
     /** 上次选择的状态 */
-    __lastState__?: number,
+    $$lastState$$?: number,
+    /** 默认状态属性 */
+    $$default$$?: TProp;
     [state: number]: TProp
 }
 type TCtrl = {
@@ -54,11 +43,12 @@ export class StateSelect extends Component {
     /** 状态数据
      * {
      *      ctrlName:{
-     *          [__lastPage__]:stateIndex
-     *          stateIndex:{
-     *              [__lastProp__]:EnumPropName 
-     *              EnumPropName:true,//active
-     *              1:v3,//postion
+     *          [lastPage] : stateIndex
+     *          [default]:{}
+     *          stateIndex : {
+     *              [lastProp]:EnumPropName 
+     *              EnumPropName.act : true,//active
+     *              1 : v3,//postion
      *          },
      *          stateName1:{},
      *      }
@@ -66,7 +56,7 @@ export class StateSelect extends Component {
      * 
      */
     @property
-    private _ctrlData: TCtrl = {};
+    _ctrlData: TCtrl = {};
 
     /** 控制器所在节点 */
     @property({ type: Node, tooltip: "控制器所在节点，仅提示用" })
@@ -82,9 +72,9 @@ export class StateSelect extends Component {
     set ctrlName(value: string) {
         let itself = this;
         itself._ctrlName = value;
-        itself._selCtrl = itself._ctrlsMap[itself.ctrlName];
+        itself._selCtrl = itself._ctrlsMap[value];
         itself._selCtrl.addSelector(itself);
-        itself._ctrlData[itself.ctrlName] = itself._ctrlData[itself.ctrlName] || {} as TPage;
+        itself._ctrlData[value] = itself._ctrlData[value] || {};
         itself.updateCtrlPage(itself._selCtrl);
         itself.refPage();
     }
@@ -100,9 +90,9 @@ export class StateSelect extends Component {
             return;
         }
         itself._selState = value;
-        let pageData = itself._ctrlData[itself.ctrlName] as TPage;
-        pageData[value] = pageData[value] || {} as TProp;
-        pageData.__lastState__ = value;
+        let pageData = itself.getPageData();
+        pageData[value] = pageData[value] || {};
+        pageData.$$lastState$$ = value;
         itself.refProp();
     }
     /** 属性列表 */
@@ -116,9 +106,8 @@ export class StateSelect extends Component {
             return;
         }
         itself._propSel = value;
-        let pageData = itself._ctrlData[itself.ctrlName];
-        let propData = pageData[itself.ctrlState];
-        propData.__lastProp__ = value;
+        let propData = itself.getPropData();
+        propData.$$lastProp$$ = value;
         itself.setPropValue(value)
     }
     /** 属性值 */
@@ -129,15 +118,14 @@ export class StateSelect extends Component {
     set propValue(value: any) {
         let itself = this;
         itself._propValue = value;
-        let pageData = itself._ctrlData[itself.ctrlName];
-        let propData = pageData[itself.ctrlState];
+        let propData = itself.getPropData();
         propData[itself.propKey] = value;
     }
     /** 刷新上次选中页 */
     private refPage() {
         let itself = this;
-        let pageData = itself._ctrlData[itself.ctrlName] as TPage;
-        let lastState = pageData.__lastState__;
+        let pageData = itself.getPageData();
+        let lastState = pageData.$$lastState$$;
         if (lastState) {
             itself.ctrlState = lastState;
         } else {
@@ -147,16 +135,14 @@ export class StateSelect extends Component {
     /** 刷新上次选中属性 */
     private refProp() {
         let itself = this;
-        let pageData = itself._ctrlData[itself.ctrlName] as TPage;
-        let propData = pageData[itself.ctrlState];
-        let lastProp = propData.__lastProp__;
+        let propData = itself.getPropData();
+        let lastProp = propData.$$lastProp$$;
         if (lastProp) {
             itself.propKey = lastProp;
         } else {
-            itself.propKey = 0;
+            itself.propKey = EnumPropName.Non;
         }
     }
-
 
     __preload() {
         let itself = this;
@@ -166,8 +152,18 @@ export class StateSelect extends Component {
             let keys = Object.keys(itself._ctrlsMap);
             if (keys.length) {
                 itself.ctrlName = keys[0];
+            } else {
+                itself.setPropValue(EnumPropName.Non)
             }
+        } else {
+            itself.refProp();
         }
+    }
+    onLoad() {
+        let itself = this;
+        itself.node.on(Node.EventType.PARENT_CHANGED, itself._parentChanged, this);
+        itself.node.on(Node.EventType.ACTIVE_IN_HIERARCHY_CHANGED, itself._activeChanged, this);
+        itself.node.on(Node.EventType.TRANSFORM_CHANGED, itself._positionChanged, this);
     }
     onDestroy() {
         let itself = this;
@@ -175,7 +171,24 @@ export class StateSelect extends Component {
             itself._ctrlsMap[key].removeSelector(itself);
         }
     }
+    //==============一些监听=================
+    /** 父节点改变 */
+    private _parentChanged(oldParent: Node) {
+        console.log("父节点改变", oldParent.name, this.node.parent.name);
+    }
+    /** 节点active改变 */
+    private _activeChanged(node: Node) {
+        console.log("激活状态改变", node.name)
+        let itself = this;
+        // itself.propValue = itself.node.active;
+    }
+    private _positionChanged(pos: Vec3) {
+        console.log("位置改变：", pos);
+        let itself = this;
+        // itself.propValue = itself.node.position;
+    }
 
+    //=============一些界面的显示==============
     /** 更新控制器 */
     updateCtrlName(node: Node) {
         let itself = this;
@@ -193,7 +206,7 @@ export class StateSelect extends Component {
             return [];
         }
         let ctrls = node.getComponents(StateCtrl);
-        if (ctrls) {
+        if (ctrls.length) {
             this._root = node;
             return ctrls;
         }
@@ -211,64 +224,98 @@ export class StateSelect extends Component {
         CCClass.Attr.setClassAttr(itself, "ctrlState", "enumList", arr);
     }
 
+
+
+    //==============更具控制器更新的状态================
     /** 更新状态 */
     updateState(ctrl: StateCtrl) {
         let itself = this;
-        let pageData = itself._ctrlData[ctrl.ctrlName];
-        let propData = pageData[ctrl.selectedIndex];
-        console.log("更新状态22222222222")
+        let propData = itself.getPropData(ctrl.selectedIndex, ctrl.ctrlName);
         for (let key in propData) {
-            itself.setPropValue(Number(key), true)
+            itself.updateUI(Number(key), propData[key])
+        }
+    }
+    updateUI(type: EnumPropName, value: TPropValue) {
+        let itself = this;
+        switch (type) {
+            case EnumPropName.Non: {
+                return;
+            }
+            case EnumPropName.Active: {
+                itself.node.active = value as boolean;
+            } break;
+            case EnumPropName.Position: {
+                itself.node.position = value as Vec3;
+            } break;
         }
     }
 
+    //=============一些计算方式，仅储存值使用=================
 
-
-
-    //=============一些计算方式=================
-
-    getValue(type: EnumPropName) {
+    /** 获取某个控制器的状态数据 */
+    private getPageData(ctrlName?: string) {
         let itself = this;
-        let pageData = itself._ctrlData[itself.ctrlName];
-        let propData = pageData[itself.ctrlState];
+        ctrlName = ctrlName == void 0 ? itself.ctrlName : ctrlName;
+        return itself._ctrlData[ctrlName];
+    }
+    /** 获取某个状态的属性数据 */
+    private getPropData(state?: number, ctrlName?: string) {
+        let itself = this;
+        let pageData = itself.getPageData(ctrlName);
+        state = state == void 0 ? itself.ctrlState : state;
+        return pageData[state];
+    }
+    /** 获取缓存的属性值 */
+    private getPropValue(type: EnumPropName) {
+        let itself = this;
+        let propData = itself.getPropData();
         let value = propData[type];
         return value;
     }
 
     /** 设置属性值 */
-    setPropValue(type: EnumPropName, isUpdataUI?: boolean) {
+    private setPropValue(type: EnumPropName) {
         let itself = this;
-        console.log("选择的属性：", type);
         let value = null;
+        CCClass.Attr.setClassAttr(itself, "propValue", "visible", true);
         switch (type) {
+            case EnumPropName.Non: {
+                CCClass.Attr.setClassAttr(itself, "propValue", "visible", false);
+                return;
+            }
             case EnumPropName.Active: {
-                value = itself.getActive(isUpdataUI);
+                value = itself.getActive();
             } break;
             case EnumPropName.Position: {
-                value = itself.getPosition(isUpdataUI);
+                value = itself.getPosition();
             } break;
         }
         itself.propValue = value;
     }
+    /** 设置默认属性 */
+    private setDefaultPorp(type: EnumPropName) {
+        let itself = this;
+
+    }
 
     /** 显示隐藏 */
-    getActive(isSet: boolean) {
+    private getActive() {
         let itself = this;
-        let value = itself.getValue(EnumPropName.Active) as boolean;
-        value = value != void 0 ? value : itself.node.active
-        if (isSet) {
-            itself.node.active = value;
+        let value = itself.getPropValue(EnumPropName.Active) as boolean;
+        if (value == void 0) {
+            value = itself.node.active;
+            let pageData = itself._ctrlData[itself.ctrlName];
+            let propData = pageData.$$default$$ = pageData.$$default$$ || {} as TProp;
+            propData[EnumPropName.Active] = value;
         }
+        // value = value != void 0 ? value : itself.node.active
         return value;
     }
-    /** 显示隐藏 */
-    getPosition(isSet?: boolean) {
+    /** 获取位置 */
+    private getPosition() {
         let itself = this;
-        let value = itself.getValue(EnumPropName.Position) as Vec3;
+        let value = itself.getPropValue(EnumPropName.Position) as Vec3;
         value = value != void 0 ? value : itself.node.position;
-        if (isSet) {
-            itself.node.position = value;
-        }
         return value;
     }
 }
