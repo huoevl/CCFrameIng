@@ -1,16 +1,22 @@
 /**
- * 一些问题：
+ * 开发中遇到的一些问题：
  * 1、节点没激活，不会执行：__preload()等生命周期函数
  * 2、一个对象里又_开头的key，不会被序列化
- * 3、
+ * 3、代码修改，回到界面组件会先被销毁然后重新添加
+ * 4、属性里对象的赋值，是克隆对象里的值，并不是改变指向的地址
  * 
  * 
+ * 控制器已知问题：
+ * 1、改变文本只能在propvalue那里设置。从自带的string那里改变没有监听方法,
+ * 2、改变UIOpacity组件的透明度同个问题。
  * 
+ * 3、改变四元数也有问题，编辑器只能改变欧拉角
  * 
  */
 
 
 import { CCClass, CCString, Component, Enum, _decorator } from 'cc';
+import { EDITOR } from 'cc/env';
 import { EnumStateName, EnumUpdataType } from './StateEnum';
 import { StateSelect } from './StateSelect';
 const { ccclass, property, executeInEditMode } = _decorator;
@@ -37,8 +43,12 @@ export class StateCtrl extends Component {
     /** 是否正在改变 */
     changing?: boolean;
 
+
     __preload() {
         let itself = this;
+        if (!EDITOR) {
+            return;
+        }
         let array = itself.states.map((val, i) => {
             return { name: val, value: i };
         })
@@ -51,7 +61,6 @@ export class StateCtrl extends Component {
             itself.node["__CtrlName"] = 0;
         }
         itself._ctrlName = `c${itself.node["__CtrlName"]++}`;
-
     }
     onDestroy() {
         let itself = this;
@@ -72,7 +81,10 @@ export class StateCtrl extends Component {
     get states() {
         return this._pageNames;
     }
-    set states(value: string[]) {
+    private set states(value: string[]) {
+        if (!EDITOR) {
+            return;
+        }
         let itself = this;
         if (value.length < 2) {
             console.error("状态必须大于两个")
@@ -91,6 +103,7 @@ export class StateCtrl extends Component {
         CCClass.Attr.setClassAttr(itself, "selectedIndex", "enumList", array);
     }
 
+    /** 选择的状态下标 */
     @property({ type: EnumStateName, displayName: "selectedPage", tooltip: "当前选中的状态" })
     public get selectedIndex() {
         return this._selectedIndex;
@@ -108,6 +121,23 @@ export class StateCtrl extends Component {
             itself.changing = false;
         }
     }
+    /** 上一次的选中下标 */
+    public get previsousIndex(): number {
+        return this._previousIndex;
+    }
+    /** 选择的状态名字 */
+    public get selectedPage(): string {
+        if (this._selectedIndex == -1)
+            return null;
+        else
+            return this._pageNames[this._selectedIndex];
+    }
+    public set selectedPage(val: string) {
+        var i: number = this._pageNames.indexOf(val);
+        if (i == -1)
+            i = 0;
+        this.selectedIndex = i;
+    }
     /** 更新状态 */
     private updateState(type: EnumUpdataType, value?: any) {
         let itself = this;
@@ -124,7 +154,6 @@ export class StateCtrl extends Component {
             }
         }
     }
-
     public addSelector(select: StateSelect) {
         let itself = this;
         itself._allSelectors[select.uuid] = select;

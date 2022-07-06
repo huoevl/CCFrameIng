@@ -1,5 +1,7 @@
-/**
+/**     _ctrlData数据存储结构
+ * 
  *      ctrlName:{
+ *          $$changedProp$$:[]
  *          $$lastState$$ : state1
  *          $$default$$:{
  *             EnumPropName.active : true,//active
@@ -21,21 +23,26 @@
  * 
  */
 
-import { CCClass, Color, Component, Enum, Node, Size, Vec2, Vec3, _decorator } from 'cc';
+import { CCClass, CCString, Color, Component, Enum, Label, Node, Quat, Size, Sprite, SpriteFrame, UIOpacity, UITransform, Vec2, Vec3, _decorator, __private } from 'cc';
+import { EDITOR } from 'cc/env';
 import { StateCtrl } from './StateCtrl';
-import { EnumCtrlName, EnumPropName, EnumStateName } from './StateEnum';
+import { ConstPropName, EnumCtrlName, EnumPropName, EnumStateName } from './StateEnum';
 const { ccclass, property, executeInEditMode } = _decorator;
+type TransformBit = __private._cocos_core_scene_graph_node_enum__TransformBit
 Enum(EnumCtrlName);
 Enum(EnumStateName);
 Enum(EnumPropName);
 
 /** 属性类型 */
-type TPropValue = number | boolean | string | Vec3 | Vec2 | Color | Size;
+type TPropValue = number | boolean | string | Vec3 | Vec2 | Color | Size | Quat | SpriteFrame;
 type TProp = {
+    /** 上一次选择的属性 */
     $$lastProp$$?: number;
     [key: number]: TPropValue,
 }
 type TPage = {
+    /** 已经改变的属性 */
+    $$changedProp$$?: { [name: string]: EnumPropName };
     /** 上次选择的状态 */
     $$lastState$$?: number,
     /** 默认状态属性 */
@@ -74,19 +81,21 @@ export class StateSelect extends Component {
     /** 是否立即执行 */
     @property
     private _isImmediately: boolean = false;
+    @property
+    private _isDeleteCurr: boolean = false;
 
     /** 状态数据 */
     @property
-    _ctrlData: TCtrl = {};
+    private _ctrlData: TCtrl = {};
 
     /** 是否重新获取 */
     @property({ tooltip: "是否重新获取ctrl" })
     get isReload() {
         return false;
     }
-    set isReload(value: boolean) {
+    private set isReload(value: boolean) {
         let itself = this;
-        if (value) {
+        if (EDITOR && value) {
             itself.__preload();
         }
     }
@@ -95,7 +104,7 @@ export class StateSelect extends Component {
     get ctrlState() {
         return this._ctrlState;
     }
-    set ctrlState(value: number) {
+    private set ctrlState(value: number) {
         let itself = this;
         itself._ctrlState = value;
         if (itself._currCtrl) {
@@ -113,11 +122,15 @@ export class StateSelect extends Component {
     get ctrlName() {
         return this._ctrlName;
     }
-    set ctrlName(value: string) {
+    private set ctrlName(value: string) {
+        if (!EDITOR) {
+            return;
+        }
         let itself = this;
         itself._ctrlName = value;
         if (!value) {
             itself.currState = null;
+            itself._currCtrl = null;
             return;
         }
         itself._currCtrl = itself._ctrlsMap[value];
@@ -125,13 +138,17 @@ export class StateSelect extends Component {
         itself._currCtrl.addSelector(itself);
         itself.updateCtrlPage(itself._currCtrl);
         itself.refPage();
+
     }
     /** 控制器状态 */
     @property({ type: EnumStateName, tooltip: "需要改变属性的状态" })
     get currState() {
         return this._currState;
     }
-    set currState(value: number) {
+    private set currState(value: number) {
+        if (!EDITOR) {
+            return;
+        }
         let itself = this;
         if (itself.ctrlName == void 0) {
             itself._currState = null;
@@ -148,7 +165,10 @@ export class StateSelect extends Component {
     get propKey() {
         return this._propKey;
     }
-    set propKey(value: EnumPropName) {
+    private set propKey(value: EnumPropName) {
+        if (!EDITOR) {
+            return;
+        }
         let itself = this;
         if (itself.currState == void 0) {
             itself._propKey = EnumPropName.Non;
@@ -156,27 +176,42 @@ export class StateSelect extends Component {
         }
         itself._propKey = value;
         let propData = itself.getPropData();
+        let pageData = itself.getPageData();
         propData.$$lastProp$$ = value;
-        itself.setPropValue(value)
+        let flag = itself.setPropValue(value)
+        if (flag && value != EnumPropName.Non) {
+            pageData.$$changedProp$$ = pageData.$$changedProp$$ || {};
+            pageData.$$changedProp$$[ConstPropName[value]] = value;
+            itself.updateChangedProp();
+        }
     }
     /** 属性值 */
     @property({ tooltip: "当前状态属性值" })
     get propValue() {
         return this._propValue;
     }
-    set propValue(value: any) {
+    private set propValue(value: any) {
+        if (!EDITOR) {
+            return;
+        }
         let itself = this;
         itself._propValue = value;
         let propData = itself.getPropData();
         propData[itself.propKey] = value;
+        if (itself.isImmediately) {
+            itself.updateState(itself._currCtrl);
+        }
     }
     /** 是否立即刷新 */
     @property({ tooltip: "是否立即刷新编辑器界面" })
     get isImmediately() {
         return this._isImmediately;
     }
-    set isImmediately(value: boolean) {
+    private set isImmediately(value: boolean) {
         let itself = this;
+        if (!EDITOR) {
+            return;
+        }
         if (!itself.ctrlName) {
             return;
         }
@@ -185,6 +220,39 @@ export class StateSelect extends Component {
             itself.updateState(itself._currCtrl);
         }
     }
+    /** 是否删除当前属性 */
+    @property({ tooltip: "是否删除当前属性" })
+    get isDeleteCurr() {
+        return this._isDeleteCurr;
+    }
+    private set isDeleteCurr(value: boolean) {
+        let itself = this;
+        if (!EDITOR) {
+            return;
+        }
+        if (!itself.ctrlName) {
+            return;
+        }
+        if (itself.propKey == EnumPropName.Non) {
+            return;
+        }
+        //删除属性
+        let pageData = itself.getPageData();
+        let $$changedProp$$ = pageData.$$changedProp$$ || {};
+        let name = ConstPropName[itself.propKey];
+        let key = $$changedProp$$[name];
+        delete $$changedProp$$[name];
+        for (let state in pageData) {
+            let propData = pageData[state];
+            delete propData[key];
+        }
+        itself.propKey = EnumPropName.Non;
+        itself.updateChangedProp();
+    }
+
+    /** 已经改变的属性 */
+    @property({ type: CCString, readonly: true, tooltip: "已经改变的属性" })
+    changedProp: string[] = [];
 
     /** 刷新上次选中页 */
     private refPage() {
@@ -210,6 +278,9 @@ export class StateSelect extends Component {
     }
 
     __preload() {
+        if (!EDITOR) {
+            return;
+        }
         let itself = this;
         itself.updateCtrlName(itself.node.parent);
         itself.updateCtrlPage(itself._currCtrl);
@@ -223,13 +294,21 @@ export class StateSelect extends Component {
             }
         } else {
             itself.refProp();
+            itself.updateChangedProp();
         }
     }
     onLoad() {
         let itself = this;
-        itself.node.on(Node.EventType.PARENT_CHANGED, itself._parentChanged, this);
-        itself.node.on(Node.EventType.ACTIVE_IN_HIERARCHY_CHANGED, itself._activeChanged, this);
-        itself.node.on(Node.EventType.TRANSFORM_CHANGED, itself._positionChanged, this);
+        if (!EDITOR) {
+            return;
+        }
+        itself.node.on(Node.EventType.PARENT_CHANGED, itself._parentChanged, itself);
+        itself.node.on(Node.EventType.ACTIVE_IN_HIERARCHY_CHANGED, itself._activeChanged, itself);
+        itself.node.on(Node.EventType.TRANSFORM_CHANGED, itself._positionChanged, itself);
+        itself.node.on(Node.EventType.SIZE_CHANGED, itself._sizeChanged, itself);
+        itself.node.on(Node.EventType.ANCHOR_CHANGED, itself._anchorChanged, itself);
+        itself.node.on(Node.EventType.COLOR_CHANGED, itself._colorChanged, itself);
+        itself.node.on(Sprite.EventType.SPRITE_FRAME_CHANGED, itself._spriteChanged, itself)
     }
     onDestroy() {
         let itself = this;
@@ -237,20 +316,50 @@ export class StateSelect extends Component {
             itself._ctrlsMap[key].removeSelector(itself);
         }
     }
-    //==============一些监听=================
+    //==============一些监听、设置默认属性=================
     /** 父节点改变 */
     private _parentChanged(oldParent: Node) {
         let itself = this;
-        itself.setDefaultPorp(EnumPropName.Position);
+        let pos = itself.getPropValue(EnumPropName.Position);
+        console.log("上一次的位置：", pos);
+        itself.transPosition(oldParent);
     }
     /** 节点active改变 */
     private _activeChanged(node: Node) {
         let itself = this;
         itself.setDefaultPorp(EnumPropName.Active);
     }
-    private _positionChanged(pos: Vec3) {
+    /** 节点改变位置、旋转或缩放事件。如果具体需要判断是哪一个事件，可通过判断回调的第一个参数类型是 [[Node.TransformBit]] 中的哪一个来获取 */
+    private _positionChanged(type: TransformBit) {
         let itself = this;
-        itself.setDefaultPorp(EnumPropName.Position);
+        if (type == Node.TransformBit.POSITION) {
+            itself.setDefaultPorp(EnumPropName.Position);
+        } else if (type == Node.TransformBit.ROTATION) {
+            // itself.setDefaultPorp(EnumPropName.Rotation);
+            itself.setDefaultPorp(EnumPropName.Euler);
+        } else if (type == Node.TransformBit.SCALE) {
+            itself.setDefaultPorp(EnumPropName.Scale);
+        }
+    }
+    /** 节点大小改变 */
+    private _sizeChanged(size: Size) {
+        let itself = this;
+        itself.setDefaultPorp(EnumPropName.Size);
+    }
+    /** 锚点改变 */
+    private _anchorChanged(anchor: Vec2) {
+        let itself = this;
+        itself.setDefaultPorp(EnumPropName.Anchor);
+    }
+    /** 颜色改变 */
+    private _colorChanged(color: Color) {
+        let itself = this;
+        itself.setDefaultPorp(EnumPropName.Color);
+    }
+    /** 图片改变 */
+    private _spriteChanged(sprite: Sprite) {
+        let itself = this;
+        itself.setDefaultPorp(EnumPropName.SpriteFrame);
     }
 
     //=============一些界面的显示==============
@@ -300,23 +409,36 @@ export class StateSelect extends Component {
     /** 控制器被删除 */
     updateDelete(ctrl: StateCtrl) {
         let itself = this;
-        console.log("删除")
         delete itself._ctrlData[ctrl.ctrlName];
         if (itself.ctrlName == ctrl.ctrlName) {
             itself.destroy();
+
         }
     }
+    /** 已经改变的属性 */
+    updateChangedProp() {
+        let itself = this;
+        let pageData = itself.getPageData();
+        let arr = [];
+        for (let name in pageData.$$changedProp$$) {
+            arr.push(name);
+        }
+        itself.changedProp = arr;
+    }
 
-    //==============更具控制器更新的状态================
+    //==============更具控制器更新的状态 主要代码================
     private _isFromCtrl: boolean = false;
     /** 更新状态 */
     updateState(ctrl: StateCtrl) {
         let itself = this;
+        if (!ctrl) {
+            return;
+        }
         itself._isFromCtrl = true;
         let propData = itself.getPropData(ctrl.selectedIndex, ctrl.ctrlName);
         let defaultData = itself.getDefaultData(ctrl.ctrlName);
         for (let key in defaultData) {
-            let value = propData[key] != void 0 ? propData[key] : defaultData[key];
+            let value = propData[key] == void 0 ? defaultData[key] : propData[key];
             itself.updateUI(Number(key), value)
         }
         itself._isFromCtrl = false;
@@ -333,9 +455,53 @@ export class StateSelect extends Component {
             case EnumPropName.Position: {
                 itself.node.position = value as Vec3;
             } break;
+            case EnumPropName.Lable: {
+                let label = itself.node.getComponent(Label);
+                if (label) {
+                    label.string = value as string;
+                }
+            } break;
+            case EnumPropName.SpriteFrame: {
+                let sprite = itself.node.getComponent(Sprite);
+                if (sprite) {
+                    sprite.spriteFrame = value as SpriteFrame;
+                }
+            } break;
+            // case EnumPropName.Rotation: {
+            //     itself.node.rotation = value as Quat;
+            // } break;
+            case EnumPropName.Euler: {
+                itself.node.eulerAngles = value as Vec3;
+            } break;
+            case EnumPropName.Scale: {
+                itself.node.scale = value as Vec3;
+            } break;
+            case EnumPropName.Anchor: {
+                let trans = itself.node.getComponent(UITransform);
+                if (trans) {
+                    trans.anchorPoint = value as Vec2;
+                }
+            } break;
+            case EnumPropName.Size: {
+                let trans = itself.node.getComponent(UITransform);
+                if (trans) {
+                    trans.contentSize = value as Size;
+                }
+            } break;
+            case EnumPropName.Color: {
+                let sprite_label = itself.node.getComponent(Sprite) || itself.node.getComponent(Label);
+                if (sprite_label) {
+                    sprite_label.color = value as Color;
+                }
+            } break;
+            case EnumPropName.Opacity: {
+                let opacity = itself.node.getComponent(UIOpacity);
+                if (opacity) {
+                    opacity.opacity = value as number;
+                }
+            } break;
         }
     }
-
     //=============一些计算方式，仅储存值使用=================
 
     /** 获取某个控制器的状态数据 */
@@ -374,32 +540,73 @@ export class StateSelect extends Component {
         return pageData.$$default$$;
     }
 
-    /** 设置属性值 */
+    /** 还原编辑器属性值 */
     private setPropValue(type: EnumPropName) {
         let itself = this;
-        let value = null;
+        let value = itself.handleValue(type);
+        if (value == void 0) {
+            CCClass.Attr.setClassAttr(itself, "propValue", "visible", false);
+            return void 0;
+        }
         CCClass.Attr.setClassAttr(itself, "propValue", "visible", true);
+        itself.propValue = value;
+        return true;
+    }
+    //解析并返回属性值
+    private handleValue(type: EnumPropName) {
+        let itself = this;
+        let value: TPropValue;
         switch (type) {
             case EnumPropName.Non: {
-                CCClass.Attr.setClassAttr(itself, "propValue", "visible", false);
-                return;
-            }
+                value = void 0;
+            } break;
             case EnumPropName.Active: {
                 value = itself.getActive();
             } break;
             case EnumPropName.Position: {
                 value = itself.getPosition();
             } break;
+            // case EnumPropName.Rotation: {
+            //     value = itself.getRotation();
+            // } break;
+            case EnumPropName.Euler: {
+                value = itself.getEuler();
+            } break;
+            case EnumPropName.Scale: {
+                value = itself.getScale();
+            } break;
+            case EnumPropName.Anchor: {
+                value = itself.getAnchor();
+            } break;
+            case EnumPropName.Size: {
+                value = itself.getSize();
+            } break;
+            case EnumPropName.Color: {
+                value = itself.getColor();
+            } break;
+            case EnumPropName.Opacity: {
+                value = itself.getOpacity();
+            } break;
+            case EnumPropName.Lable: {
+                value = itself.getLable();
+            } break;
+            case EnumPropName.SpriteFrame: {
+                value = itself.getSpriteFrame();
+            } break;
         }
-        itself.propValue = value;
+        return value;
     }
-    /** 设置默认属性 */
+    /** 编辑器改变、改变对于状态属性（最开始是说改变默认属性） */
     private setDefaultPorp(type: EnumPropName) {
         let itself = this;
+        if (!EDITOR) {
+            return;
+        }
         if (itself._isFromCtrl) {
             return;//不是编辑器改变
         }
-        let defaultData = itself.getDefaultData();
+        // let defaultData = itself.getDefaultData();
+        let defaultData = itself.getPropData();
         if (defaultData[type] == void 0) {
             return;//没有改变这个属性   
         }
@@ -411,8 +618,63 @@ export class StateSelect extends Component {
                 defaultData[EnumPropName.Active] = itself.node.active;
             } break;
             case EnumPropName.Position: {
-                defaultData[EnumPropName.Position] = itself.node.position;
+                Vec3.copy(defaultData[EnumPropName.Position] as Vec3, itself.node.position);
             } break;
+            case EnumPropName.Lable: {
+                let label = itself.node.getComponent(Label);
+                if (!label) {
+                    return;
+                }
+                defaultData[EnumPropName.Lable] = label.string;
+            } break;
+            case EnumPropName.SpriteFrame: {
+                let sprite = itself.node.getComponent(Sprite);
+                if (!sprite) {
+                    return;
+                }
+                defaultData[EnumPropName.SpriteFrame] = sprite.spriteFrame;
+            } break;
+            // case EnumPropName.Rotation: {
+            //     Vec3.copy(defaultData[EnumPropName.Rotation] as Quat, itself.node.rotation);
+            // } break;
+            case EnumPropName.Euler: {
+                Vec3.copy(defaultData[EnumPropName.Euler] as Vec3, itself.node.eulerAngles);
+            } break;
+            case EnumPropName.Scale: {
+                Vec3.copy(defaultData[EnumPropName.Scale] as Vec3, itself.node.scale);
+            } break;
+            case EnumPropName.Anchor: {
+                let trans = itself.node.getComponent(UITransform);
+                if (!trans) {
+                    return;
+                }
+                Vec2.copy(defaultData[EnumPropName.Anchor] as Vec2, trans.anchorPoint);
+            } break;
+            case EnumPropName.Size: {
+                let trans = itself.node.getComponent(UITransform);
+                if (!trans) {
+                    return;
+                }
+                (defaultData[EnumPropName.Size] as Size).set(trans.contentSize);
+            } break;
+            case EnumPropName.Color: {
+                let sprite_label = itself.node.getComponent(Sprite) || itself.node.getComponent(Label);
+                if (!sprite_label) {
+                    return;
+                }
+                (defaultData[EnumPropName.Color] as Color).set(sprite_label.color);
+            } break;
+            case EnumPropName.Opacity: {
+                let opacity = itself.node.getComponent(UIOpacity);
+                if (!opacity) {
+                    return;
+                }
+                defaultData[EnumPropName.Opacity] = opacity.opacity;
+            } break;
+        }
+        if (type == itself.propKey) {
+            let propData = itself.getPropData();
+            itself._propValue = propData[itself.propKey];
         }
     }
 
@@ -432,16 +694,149 @@ export class StateSelect extends Component {
         let itself = this;
         let value = itself.getPropValue(EnumPropName.Position) as Vec3;
         if (value == void 0) {
-            value = itself.node.position;
+            value = itself.node.getPosition();
             let defaultData = itself.getDefaultData();
-            defaultData[EnumPropName.Position] = value;
+            defaultData[EnumPropName.Position] = itself.node.getPosition();
         }
         return value;
     }
-    /** 父节点改变，转换已经缓存的位置 */
-    private transPosition() {
+    // /** 旋转、四元数 */
+    // private getRotation() {
+    //     let itself = this;
+    //     let value = itself.getPropValue(EnumPropName.Rotation) as Quat;
+    //     if (value == void 0) {
+    //         value = itself.node.getRotation();
+    //         let defaultData = itself.getDefaultData();
+    //         defaultData[EnumPropName.Rotation] = itself.node.getRotation();
+    //     }
+    //     return value;
+    // }
+    /** 旋转、欧拉角 */
+    private getEuler() {
         let itself = this;
+        let value = itself.getPropValue(EnumPropName.Euler) as Vec3;
+        if (value == void 0) {
+            value = Vec3.copy(new Vec3(), itself.node.eulerAngles);
+            let defaultData = itself.getDefaultData();
+            defaultData[EnumPropName.Euler] = Vec3.copy(new Vec3(), itself.node.eulerAngles);
+        }
+        return value;
+    }
+    /** 缩放 */
+    private getScale() {
+        let itself = this;
+        let value = itself.getPropValue(EnumPropName.Scale) as Vec3;
+        if (value == void 0) {
+            value = itself.node.getScale();
+            let defaultData = itself.getDefaultData();
+            defaultData[EnumPropName.Scale] = itself.node.getScale();
+        }
+        return value;
+    }
+    /** 锚点 */
+    private getAnchor() {
+        let itself = this;
+        let value = itself.getPropValue(EnumPropName.Anchor) as Vec2;
+        if (value == void 0) {
+            let trans = itself.node.getComponent(UITransform);
+            if (!trans) {
+                return void 0;
+            }
+            value = Vec2.copy(new Vec2(), trans.anchorPoint);
+            let defaultData = itself.getDefaultData();
+            defaultData[EnumPropName.Anchor] = Vec2.copy(new Vec2(), trans.anchorPoint);
+        }
+        return value;
+    }
+    /** 宽高 */
+    private getSize() {
+        let itself = this;
+        let value = itself.getPropValue(EnumPropName.Size) as Size;
+        if (value == void 0) {
+            let trans = itself.node.getComponent(UITransform);
+            if (!trans) {
+                return void 0;
+            }
+            value = trans.contentSize.clone();
+            let defaultData = itself.getDefaultData();
+            defaultData[EnumPropName.Size] = trans.contentSize.clone();
+        }
+        return value;
+    }
+    /** 颜色 */
+    private getColor() {
+        let itself = this;
+        let value = itself.getPropValue(EnumPropName.Color) as Color;
+        if (value == void 0) {
+            let sprite_label = itself.node.getComponent(Sprite) || itself.node.getComponent(Label);
+            if (!sprite_label) {
+                return void 0;
+            }
+            value = sprite_label.color.clone();
+            let defaultData = itself.getDefaultData();
+            defaultData[EnumPropName.Color] = sprite_label.color.clone();
+        }
+        return value;
+    }
+    /** 透明度 */
+    private getOpacity() {
+        let itself = this;
+        let value = itself.getPropValue(EnumPropName.Opacity) as number;
+        if (value == void 0) {
+            let opacity = itself.node.getComponent(UIOpacity);
+            if (!opacity) {
+                return void 0;
+            }
+            value = opacity.opacity;
+            let defaultData = itself.getDefaultData();
+            defaultData[EnumPropName.Opacity] = value;
+        }
+        return value;
+    }
+    /** 文本 */
+    private getLable() {
+        let itself = this;
+        let value = itself.getPropValue(EnumPropName.Lable) as string;
+        if (value == void 0) {
+            let label = itself.node.getComponent(Label);
+            if (!label) {
+                return void 0;
+            }
+            value = label.string;
+            let defaultData = itself.getDefaultData();
+            defaultData[EnumPropName.Lable] = value;
+        }
+        return value;
+    }
+    /** 图片 */
+    private getSpriteFrame() {
+        let itself = this;
+        let value = itself.getPropValue(EnumPropName.SpriteFrame) as SpriteFrame;
+        if (value == void 0) {
+            let sprite = itself.node.getComponent(Sprite);
+            if (!sprite) {
+                return void 0;
+            }
+            value = sprite.spriteFrame;
+            let defaultData = itself.getDefaultData();
+            defaultData[EnumPropName.SpriteFrame] = value;
+        }
+        return value;
+    }
 
+    /** 父节点改变，转换已经缓存的位置 */
+    private transPosition(oldParent: Node) {
+        let itself = this;
+        let parent = itself.node.parent;
+        let pageData = itself.getPageData();
+        let trans = itself.node.getComponent(UITransform);
+        for (let state in pageData) {
+            let propData = pageData[state];
+            let pos = propData[EnumPropName.Position];
+            if (pos) {
+                // trans.convertToNodeSpaceAR()
+            }
+        }
     }
 }
 
