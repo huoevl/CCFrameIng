@@ -9,11 +9,21 @@
  * 控制器已知问题：
  * 1、改变文本只能在propvalue那里设置。从自带的string那里改变没有监听方法,
  * 2、改变UIOpacity组件的透明度同个问题。
- * 
- * 3、改变四元数也有问题，编辑器只能改变欧拉角
+ * 3、改变四元数也有问题，编辑器只能改变欧拉角。
  * 
  */
 
+class stateValue {
+    index: number;
+    name: string;
+    uuid: number;
+    constructor(index: number, name: string, uuid: number) {
+        let itself = this;
+        itself.index = index;
+        itself.name = name;
+        itself.uuid = uuid;
+    }
+}
 
 import { CCClass, CCString, Component, Enum, _decorator } from 'cc';
 import { EDITOR } from 'cc/env';
@@ -60,7 +70,9 @@ export class StateCtrl extends Component {
         if (itself.node["__CtrlName"] == void 0) {
             itself.node["__CtrlName"] = 0;
         }
-        itself._ctrlName = `c${itself.node["__CtrlName"]++}`;
+        if (!itself._ctrlName) {
+            itself._ctrlName = `c${itself.node["__CtrlName"]++}`;
+        }
     }
     onDestroy() {
         let itself = this;
@@ -73,9 +85,8 @@ export class StateCtrl extends Component {
     }
     set ctrlName(value: string) {
         let itself = this;
-        let oldName = itself.ctrlName;
         itself._ctrlName = value;
-        itself.updateState(EnumUpdataType.name, oldName);
+        itself.updateState(EnumUpdataType.name);
     }
     @property({ type: CCString, tooltip: "状态数量。数组内容为状态名称" })
     get states() {
@@ -90,6 +101,7 @@ export class StateCtrl extends Component {
             console.error("状态必须大于两个")
             return;
         }
+        console.log(value);
         itself._pageNames = value;
         let stateMap: { [key: string]: boolean } = {};
         let array = value.map((val, i) => {
@@ -143,10 +155,14 @@ export class StateCtrl extends Component {
         let itself = this;
         for (let uuid in itself._allSelectors) {
             let select = itself._allSelectors[uuid];
+            if (!select) {
+                console.warn("出现了多余的selector是空的")
+                continue;
+            }
             if (type == EnumUpdataType.state) {
                 select.updateState(itself);
             } else if (type == EnumUpdataType.name) {
-                select.updateCtrlName(itself.node, value, itself.ctrlName);
+                select.updateCtrlName(itself.node);
             } else if (type == EnumUpdataType.selPage) {
                 select.updateCtrlPage(itself);
             } else if (type == EnumUpdataType.delete) {
