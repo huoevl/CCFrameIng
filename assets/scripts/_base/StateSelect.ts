@@ -25,7 +25,7 @@
 
 import { CCClass, CCString, Color, Component, Enum, Label, Node, Quat, Size, Sprite, SpriteFrame, UIOpacity, UITransform, Vec2, Vec3, _decorator, __private } from 'cc';
 import { EDITOR } from 'cc/env';
-import { StateCtrl } from './StateCtrl';
+import { StateCtrl, StateValue } from './StateCtrl';
 import { ConstPropName, EnumCtrlName, EnumPropName, EnumStateName } from './StateEnum';
 const { ccclass, property, executeInEditMode } = _decorator;
 type TransformBit = __private._cocos_core_scene_graph_node_enum__TransformBit
@@ -386,7 +386,7 @@ export class StateSelect extends Component {
         return this.getCtrls(node.parent);
     }
     /** 更新状态数量 */
-    updateCtrlPage(ctrl: StateCtrl, oldStates?: string[]) {
+    updateCtrlPage(ctrl: StateCtrl, oldStates?: StateValue[]) {
         let itself = this;
         if (!ctrl) {
             return;
@@ -398,7 +398,7 @@ export class StateSelect extends Component {
         }
         // for(let )
         let arr = ctrl.states.map((val, i) => {
-            return { name: val, value: i }
+            return { name: val.name, value: i }
         })
         CCClass.Attr.setClassAttr(itself, "ctrlState", "enumList", arr);
         CCClass.Attr.setClassAttr(itself, "currState", "enumList", arr);

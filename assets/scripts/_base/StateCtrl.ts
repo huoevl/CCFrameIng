@@ -13,17 +13,7 @@
  * 
  */
 
-class stateValue {
-    index: number;
-    name: string;
-    uuid: number;
-    constructor(index: number, name: string, uuid: number) {
-        let itself = this;
-        itself.index = index;
-        itself.name = name;
-        itself.uuid = uuid;
-    }
-}
+
 
 import { CCClass, CCString, Component, Enum, _decorator } from 'cc';
 import { EDITOR } from 'cc/env';
@@ -32,15 +22,30 @@ import { StateSelect } from './StateSelect';
 const { ccclass, property, executeInEditMode } = _decorator;
 
 Enum(EnumStateName)
+
+@ccclass("stateValue")
+export class StateValue {
+    index: number;
+    @property(CCString)
+    name: string = "";
+    uuid: number;
+    constructor(index: number, name: string, uuid: number) {
+        let itself = this;
+        itself.index = index;
+        itself.name = name;
+        itself.uuid = uuid;
+    }
+}
 @ccclass('StateCtrl')
 @executeInEditMode(true)
 export class StateCtrl extends Component {
+    private upId = 0;
     /** 选中的状态下标 */
     @property(EnumStateName)
     private _selectedIndex: EnumStateName = 0;
     /** 状态名字列表 */
     @property
-    private _pageNames: string[] = ["0", "1"];
+    private _pageNames: StateValue[] = [];
     /** 上一次选中的下标 */
     private _previousIndex: number = -1;
     /** 所有绑定选择器的节点 */
@@ -59,8 +64,11 @@ export class StateCtrl extends Component {
         if (!EDITOR) {
             return;
         }
+        if (!itself._pageNames.length) {
+            itself._pageNames = [new StateValue(0, "0", itself.upId++), new StateValue(1, "1", itself.upId++)]
+        }
         let array = itself.states.map((val, i) => {
-            return { name: val, value: i };
+            return { name: val.name, value: i };
         })
         CCClass.Attr.setClassAttr(itself, "selectedIndex", "enumList", array);
         // console.log(CCClass.Attr.getClassAttrs(itself)[`selectedIndex${CCClass.Attr.DELIMETER}enumList`])
@@ -92,7 +100,7 @@ export class StateCtrl extends Component {
     get states() {
         return this._pageNames;
     }
-    private set states(value: string[]) {
+    private set states(value: StateValue[]) {
         if (!EDITOR) {
             return;
         }
@@ -105,11 +113,11 @@ export class StateCtrl extends Component {
         itself._pageNames = value;
         let stateMap: { [key: string]: boolean } = {};
         let array = value.map((val, i) => {
-            if (val && stateMap[val]) {
+            if (val && stateMap[val.name]) {
                 console.error("重复的状态值", val, i);
             }
-            stateMap[val] = true;
-            return { name: val, value: i };
+            stateMap[val.name] = true;
+            return { name: val.name, value: i };
         })
         itself.updateState(EnumUpdataType.selPage)
         CCClass.Attr.setClassAttr(itself, "selectedIndex", "enumList", array);
@@ -142,13 +150,16 @@ export class StateCtrl extends Component {
         if (this._selectedIndex == -1)
             return null;
         else
-            return this._pageNames[this._selectedIndex];
+            return this._pageNames[this._selectedIndex].name;
     }
     public set selectedPage(val: string) {
-        var i: number = this._pageNames.indexOf(val);
-        if (i == -1)
-            i = 0;
-        this.selectedIndex = i;
+        let itself = this;
+        for (let index = 0, len = itself._pageNames.length; index < len; index++) {
+            if (itself._pageNames[index].name == val) {
+                itself.selectedIndex = index;
+                return;
+            }
+        }
     }
     /** 更新状态 */
     private updateState(type: EnumUpdataType, value?: any) {
