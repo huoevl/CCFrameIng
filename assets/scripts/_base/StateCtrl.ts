@@ -15,7 +15,7 @@
 
 
 
-import { CCClass, CCString, Component, Enum, _decorator } from 'cc';
+import { CCClass, CCInteger, CCString, Component, Enum, _decorator } from 'cc';
 import { EDITOR } from 'cc/env';
 import { EnumStateName, EnumUpdataType } from './StateEnum';
 import { StateSelect } from './StateSelect';
@@ -25,26 +25,26 @@ Enum(EnumStateName)
 
 @ccclass("stateValue")
 export class StateValue {
-    index: number;
     @property(CCString)
     name: string = "";
-    uuid: number;
-    constructor(index: number, name: string, uuid: number) {
+    @property({ type: CCInteger, readonly: true })
+    stateId: number = 0;
+    constructor(name: string, stateId: number) {
         let itself = this;
-        itself.index = index;
         itself.name = name;
-        itself.uuid = uuid;
+        itself.stateId = stateId;
     }
 }
 @ccclass('StateCtrl')
 @executeInEditMode(true)
 export class StateCtrl extends Component {
-    private upId = 0;
+    @property
+    private stateIdAuto = 0;
     /** 选中的状态下标 */
     @property(EnumStateName)
     private _selectedIndex: EnumStateName = 0;
     /** 状态名字列表 */
-    @property
+    @property(StateValue)
     private _pageNames: StateValue[] = [];
     /** 上一次选中的下标 */
     private _previousIndex: number = -1;
@@ -65,7 +65,7 @@ export class StateCtrl extends Component {
             return;
         }
         if (!itself._pageNames.length) {
-            itself._pageNames = [new StateValue(0, "0", itself.upId++), new StateValue(1, "1", itself.upId++)]
+            itself._pageNames = [new StateValue("0", itself.stateIdAuto++), new StateValue("1", itself.stateIdAuto++)]
         }
         let array = itself.states.map((val, i) => {
             return { name: val.name, value: i };
@@ -96,7 +96,7 @@ export class StateCtrl extends Component {
         itself._ctrlName = value;
         itself.updateState(EnumUpdataType.name);
     }
-    @property({ type: CCString, tooltip: "状态数量。数组内容为状态名称" })
+    @property({ type: StateValue, tooltip: "状态数量。数组内容为状态名称" })
     get states() {
         return this._pageNames;
     }
@@ -109,7 +109,34 @@ export class StateCtrl extends Component {
             console.error("状态必须大于两个")
             return;
         }
-        console.log(value);
+
+        let oldLen = itself._pageNames.length;
+        let newLen = value.length;
+        let deleteIndex = -1;
+        if (oldLen > newLen) {
+            //被删除状态
+            for (let index = 0; index < oldLen; index++) {
+                let oldS = itself._pageNames[index];
+                let newS = value[index];
+                if (!newS || oldS.stateId != newS.stateId) {
+                    //被删的index，更新数据
+                    deleteIndex = index;
+                    setTimeout(() => {
+                        if (itself.selectedIndex >= index) {
+                            itself.selectedIndex = itself.selectedIndex - 1;
+                        }
+                    })
+                    break;
+                }
+            }
+        } else if (newLen > oldLen) {
+            //最新的几个没有值
+            for (let index = itself._pageNames.length, len = value.length; index < len; index++) {
+                let val = value[index];
+                val.name = "" + itself.stateIdAuto;
+                val.stateId = itself.stateIdAuto++;
+            }
+        }
         itself._pageNames = value;
         let stateMap: { [key: string]: boolean } = {};
         let array = value.map((val, i) => {
@@ -119,7 +146,7 @@ export class StateCtrl extends Component {
             stateMap[val.name] = true;
             return { name: val.name, value: i };
         })
-        itself.updateState(EnumUpdataType.selPage)
+        itself.updateState(EnumUpdataType.selPage, deleteIndex)
         CCClass.Attr.setClassAttr(itself, "selectedIndex", "enumList", array);
     }
 
@@ -175,7 +202,7 @@ export class StateCtrl extends Component {
             } else if (type == EnumUpdataType.name) {
                 select.updateCtrlName(itself.node);
             } else if (type == EnumUpdataType.selPage) {
-                select.updateCtrlPage(itself);
+                select.updateCtrlPage(itself, value);
             } else if (type == EnumUpdataType.delete) {
                 select.updateDelete(itself);
             }

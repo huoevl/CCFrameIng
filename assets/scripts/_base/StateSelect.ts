@@ -8,12 +8,12 @@
  *              1 : v3,//postion, 
  *              .....
  *          }
- *          state0 : {
+ *          stateUUId0 : {
  *              $$lastProp$$:EnumPropName.active
  *              EnumPropName.active : true,//active
  *              .....
  *          },
- *          state1:{
+ *          stateUUId1:{
  *              $$lastProp$$:EnumPropName.pos
  *              1 : v3,//postion,
  *              .....
@@ -25,7 +25,7 @@
 
 import { CCClass, CCString, Color, Component, Enum, Label, Node, Quat, Size, Sprite, SpriteFrame, UIOpacity, UITransform, Vec2, Vec3, _decorator, __private } from 'cc';
 import { EDITOR } from 'cc/env';
-import { StateCtrl, StateValue } from './StateCtrl';
+import { StateCtrl } from './StateCtrl';
 import { ConstPropName, EnumCtrlName, EnumPropName, EnumStateName } from './StateEnum';
 const { ccclass, property, executeInEditMode } = _decorator;
 type TransformBit = __private._cocos_core_scene_graph_node_enum__TransformBit
@@ -58,13 +58,10 @@ export class StateSelect extends Component {
     /** root节点所有的ctrl */
     @property
     private _ctrlsMap: { [uuid: string]: StateCtrl } = {};
-    /** ctrl中选择的状态 */
-    @property
-    private _ctrlState: number = null;
     /** 当前中的ctrl */
     @property
     private _currCtrl: StateCtrl = null;
-    /** 当前选中的ctrl名称 */
+    /** 当前选中的ctrl名称对应的uuid */
     @property(EnumCtrlName)
     private _ctrluuid: string = null;
     /** 当前选中的状态 */
@@ -102,11 +99,11 @@ export class StateSelect extends Component {
 
     @property({ type: EnumStateName, tooltip: "控制器所在节点，仅提示用" })
     get ctrlState() {
-        return this._ctrlState;
+        let itself = this;
+        return itself._currCtrl?.selectedIndex;
     }
     private set ctrlState(value: number) {
         let itself = this;
-        itself._ctrlState = value;
         if (itself._currCtrl) {
             itself._currCtrl.selectedIndex = value;
         }
@@ -134,7 +131,6 @@ export class StateSelect extends Component {
             return;
         }
         itself._currCtrl = itself._ctrlsMap[value];
-        itself._ctrlState = itself._currCtrl.selectedIndex;
         itself._currCtrl.addSelector(itself);
         itself.updateCtrlPage(itself._currCtrl);
         itself.refPage();
@@ -386,17 +382,27 @@ export class StateSelect extends Component {
         return this.getCtrls(node.parent);
     }
     /** 更新状态数量 */
-    updateCtrlPage(ctrl: StateCtrl, oldStates?: StateValue[]) {
+    updateCtrlPage(ctrl: StateCtrl, deleteIndex?: number) {
         let itself = this;
         if (!ctrl) {
             return;
         }
-        itself.ctrlState
-        if (oldStates?.length > ctrl.states.length) {
-            //被删除状态
-
+        if (deleteIndex != -1) {
+            //被删的index，更新数据,一次只能删一个
+            let pageData = itself.getPageData();
+            for (let state = deleteIndex; state <= ctrl.states.length - 1; state++) {
+                let next = pageData[state + 1];
+                if (next) {
+                    pageData[state] = next;
+                }
+            }
+            setTimeout(() => {
+                if (itself.currState >= deleteIndex) {
+                    itself.currState = itself.currState - 1;
+                }
+            })
+            delete pageData[ctrl.states.length]
         }
-        // for(let )
         let arr = ctrl.states.map((val, i) => {
             return { name: val.name, value: i }
         })
