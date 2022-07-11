@@ -1,6 +1,6 @@
 /**     _ctrlData数据存储结构
  * 
- *      ctrluuid:{
+ *      ctrlId:{
  *          $$changedProp$$:[]
  *          $$lastState$$ : state1
  *          $$default$$:{
@@ -50,20 +50,23 @@ type TPage = {
     [state: number]: TProp
 }
 type TCtrl = {
-    [uuid: string]: TPage;
+    [stateId: string]: TPage;
 }
 @ccclass('StateSelect')
 @executeInEditMode(true)
 export class StateSelect extends Component {
     /** root节点所有的ctrl */
     @property
-    private _ctrlsMap: { [uuid: string]: StateCtrl } = {};
+    private _ctrlsMap: { [ctrlId: string]: StateCtrl } = {};
+    /** selectId */
+    @property({ visible: false })
+    _selectId = Date.now();
     /** 当前中的ctrl */
     @property
     private _currCtrl: StateCtrl = null;
-    /** 当前选中的ctrl名称对应的uuid */
+    /** 当前选中的ctrl名称对应的ctrlId */
     @property(EnumCtrlName)
-    private _ctrluuid: string = null;
+    private _currCtrlId: number = null;
     /** 当前选中的状态 */
     @property(EnumStateName)
     private _currState: number = null;
@@ -116,15 +119,15 @@ export class StateSelect extends Component {
     }
     /** 控制器名称 */
     @property({ type: EnumCtrlName, displayName: "ctrlName", tooltip: "选择的控制器" })
-    get ctrluuid() {
-        return this._ctrluuid;
+    get currCtrlId() {
+        return this._currCtrlId;
     }
-    private set ctrluuid(value: string) {
+    private set currCtrlId(value: number) {
         if (!EDITOR) {
             return;
         }
         let itself = this;
-        itself._ctrluuid = value;
+        itself._currCtrlId = value;
         if (!value) {
             itself.currState = null;
             itself._currCtrl = null;
@@ -146,7 +149,7 @@ export class StateSelect extends Component {
             return;
         }
         let itself = this;
-        if (itself.ctrluuid == void 0) {
+        if (itself.currCtrlId == void 0) {
             itself._currState = null;
             itself._propKey = EnumPropName.Non;
             return;
@@ -208,7 +211,7 @@ export class StateSelect extends Component {
         if (!EDITOR) {
             return;
         }
-        if (!itself.ctrluuid) {
+        if (!itself.currCtrlId) {
             return;
         }
         itself._isImmediately = value;
@@ -226,7 +229,7 @@ export class StateSelect extends Component {
         if (!EDITOR) {
             return;
         }
-        if (!itself.ctrluuid) {
+        if (!itself.currCtrlId) {
             return;
         }
         if (itself.propKey == EnumPropName.Non) {
@@ -280,10 +283,10 @@ export class StateSelect extends Component {
         let itself = this;
         itself.updateCtrlName(itself.node.parent);
         itself.updateCtrlPage(itself._currCtrl);
-        if (!itself.ctrluuid) {
-            let uuidKeys = Object.keys(itself._ctrlsMap);
-            if (uuidKeys.length) {
-                itself.ctrluuid = uuidKeys[0];
+        if (!itself.currCtrlId) {
+            let ctrlIdKeys = Object.keys(itself._ctrlsMap);
+            if (ctrlIdKeys.length) {
+                itself.currCtrlId = Number(ctrlIdKeys[0]);
             } else {
                 console.error("没有添加控制器")
                 itself._onPreDestroy();
@@ -308,8 +311,8 @@ export class StateSelect extends Component {
     }
     onDestroy() {
         let itself = this;
-        for (let uuid in itself._ctrlsMap) {
-            itself._ctrlsMap[uuid].removeSelector(itself);
+        for (let ctrlId in itself._ctrlsMap) {
+            itself._ctrlsMap[ctrlId].removeSelector(itself);
         }
 
     }
@@ -364,10 +367,10 @@ export class StateSelect extends Component {
         let ctrls = itself.getCtrls(node);
         itself._ctrlsMap = {};
         let arr = ctrls.map((val, i) => {
-            itself._ctrlsMap[val.uuid] = val;
-            return { name: val.ctrlName, value: val.uuid }
+            itself._ctrlsMap[val._ctrlId] = val;
+            return { name: val.ctrlName, value: val._ctrlId }
         })
-        CCClass.Attr.setClassAttr(itself, "ctrluuid", "enumList", arr);
+        CCClass.Attr.setClassAttr(itself, "currCtrlId", "enumList", arr);
     }
     /** 获取所有的Ctrl */
     private getCtrls(node: Node): StateCtrl[] {
@@ -396,12 +399,28 @@ export class StateSelect extends Component {
                     pageData[state] = next;
                 }
             }
+            let deleteState = pageData[ctrl.states.length];
+            delete pageData[ctrl.states.length]
             setTimeout(() => {
                 if (itself.currState >= deleteIndex) {
                     itself.currState = itself.currState - 1;
                 }
+                for (let prop in deleteState) {//这里要删除改变的属性
+                    let allNot = true;
+                    for (let index = 0, len = ctrl.states.length; index < len; index++) {
+                        if (pageData[index][prop] != void 0) {
+                            allNot = false;
+                            break;
+                        }
+                    }
+                    if (allNot) {
+                        let name = ConstPropName[prop];
+                        delete pageData.$$changedProp$$[name];
+                        delete pageData.$$default$$[prop];
+                        itself.updateChangedProp();
+                    }
+                }
             })
-            delete pageData[ctrl.states.length]
         }
         let arr = ctrl.states.map((val, i) => {
             return { name: val.name, value: i }
@@ -412,10 +431,9 @@ export class StateSelect extends Component {
     /** 控制器被删除 */
     updateDelete(ctrl: StateCtrl) {
         let itself = this;
-        delete itself._ctrlData[ctrl.uuid];
-        if (itself.ctrluuid == ctrl.uuid) {
+        delete itself._ctrlData[ctrl._ctrlId];
+        if (itself.currCtrlId == ctrl._ctrlId) {
             itself._onPreDestroy();
-
         }
     }
     /** 已经改变的属性 */
@@ -438,8 +456,8 @@ export class StateSelect extends Component {
             return;
         }
         itself._isFromCtrl = true;
-        let propData = itself.getPropData(ctrl.selectedIndex, ctrl.uuid);
-        let defaultData = itself.getDefaultData(ctrl.uuid);
+        let propData = itself.getPropData(ctrl.selectedIndex, ctrl._ctrlId);
+        let defaultData = itself.getDefaultData(ctrl._ctrlId);
         for (let key in defaultData) {
             let value = propData[key] == void 0 ? defaultData[key] : propData[key];
             itself.updateUI(Number(key), value)
@@ -508,18 +526,18 @@ export class StateSelect extends Component {
     //=============一些计算方式，仅储存值使用=================
 
     /** 获取某个控制器的状态数据 */
-    private getPageData(ctrluuid?: string) {
+    private getPageData(ctrlId?: number) {
         let itself = this;
-        ctrluuid = ctrluuid == void 0 ? itself.ctrluuid : ctrluuid;
-        if (itself._ctrlData[ctrluuid] == void 0) {
-            itself._ctrlData[ctrluuid] = {};
+        ctrlId = ctrlId == void 0 ? itself.currCtrlId : ctrlId;
+        if (itself._ctrlData[ctrlId] == void 0) {
+            itself._ctrlData[ctrlId] = {};
         }
-        return itself._ctrlData[ctrluuid];
+        return itself._ctrlData[ctrlId];
     }
     /** 获取某个状态的属性数据 */
-    private getPropData(state?: number, ctrluuid?: string) {
+    private getPropData(state?: number, ctrlId?: number) {
         let itself = this;
-        let pageData = itself.getPageData(ctrluuid);
+        let pageData = itself.getPageData(ctrlId);
         state = state == void 0 ? itself.currState : state;
         if (pageData[state] == void 0) {
             pageData[state] = {};
@@ -534,9 +552,9 @@ export class StateSelect extends Component {
         return value;
     }
     /** 获取默认属性 */
-    private getDefaultData(ctrluuid?: string) {
+    private getDefaultData(ctrlId?: number) {
         let itself = this;
-        let pageData = itself.getPageData(ctrluuid);
+        let pageData = itself.getPageData(ctrlId);
         if (pageData.$$default$$ == void 0) {
             pageData.$$default$$ = {};
         }

@@ -4,13 +4,14 @@
  * 2、一个对象里又_开头的key，不会被序列化
  * 3、代码修改，回到界面组件会先被销毁然后重新添加
  * 4、属性里对象的赋值，是克隆对象里的值，并不是改变指向的地址
+ * 5、关闭编辑后再打开，uuid会改变
  * 
  * 
  * 控制器已知问题：
  * 1、改变文本只能在propvalue那里设置。从自带的string那里改变没有监听方法,
  * 2、改变UIOpacity组件的透明度同个问题。
  * 3、改变四元数也有问题，编辑器只能改变欧拉角。
- * 
+ * 4、不能使用ctrl+z（撤销），否则一些数据会没掉
  */
 
 
@@ -38,8 +39,11 @@ export class StateValue {
 @ccclass('StateCtrl')
 @executeInEditMode(true)
 export class StateCtrl extends Component {
-    @property
+    @property({ visible: false })
     private stateIdAuto = 0;
+    /** 控制器唯一id，如果使用uuid每次打开编辑器就会变 */
+    @property({ visible: false })
+    _ctrlId = Date.now();
     /** 选中的状态下标 */
     @property(EnumStateName)
     private _selectedIndex: EnumStateName = 0;
@@ -50,7 +54,7 @@ export class StateCtrl extends Component {
     private _previousIndex: number = -1;
     /** 所有绑定选择器的节点 */
     @property
-    private _allSelectors: { [uuid: string]: StateSelect } = {};
+    private _allSelectors: { [selectId: string]: StateSelect } = {};
     /** 控制器名字 */
     @property(CCString)
     // private _ctrlName: string = `ctrl_${Date.now().toString()}`;
@@ -96,6 +100,26 @@ export class StateCtrl extends Component {
         itself._ctrlName = value;
         itself.updateState(EnumUpdataType.name);
     }
+
+    /** 选择的状态下标 */
+    @property({ type: EnumStateName, displayName: "selectedPage", tooltip: "当前选中的状态" })
+    public get selectedIndex() {
+        return this._selectedIndex;
+    }
+    public set selectedIndex(value: EnumStateName) {
+        let itself = this;
+        if (itself._selectedIndex != value) {
+            if (value > itself._pageNames.length - 1) {
+                throw "index out of bounds:（越界） " + value;
+            }
+            itself.changing = true;
+            itself._previousIndex = itself._selectedIndex;
+            itself._selectedIndex = value;
+            itself.updateState(EnumUpdataType.state);
+            itself.changing = false;
+        }
+    }
+
     @property({ type: StateValue, tooltip: "状态数量。数组内容为状态名称" })
     get states() {
         return this._pageNames;
@@ -150,24 +174,7 @@ export class StateCtrl extends Component {
         CCClass.Attr.setClassAttr(itself, "selectedIndex", "enumList", array);
     }
 
-    /** 选择的状态下标 */
-    @property({ type: EnumStateName, displayName: "selectedPage", tooltip: "当前选中的状态" })
-    public get selectedIndex() {
-        return this._selectedIndex;
-    }
-    public set selectedIndex(value: EnumStateName) {
-        let itself = this;
-        if (itself._selectedIndex != value) {
-            if (value > itself._pageNames.length - 1) {
-                throw "index out of bounds:（越界） " + value;
-            }
-            itself.changing = true;
-            itself._previousIndex = itself._selectedIndex;
-            itself._selectedIndex = value;
-            itself.updateState(EnumUpdataType.state);
-            itself.changing = false;
-        }
-    }
+
     /** 上一次的选中下标 */
     public get previsousIndex(): number {
         return this._previousIndex;
@@ -191,8 +198,8 @@ export class StateCtrl extends Component {
     /** 更新状态 */
     private updateState(type: EnumUpdataType, value?: any) {
         let itself = this;
-        for (let uuid in itself._allSelectors) {
-            let select = itself._allSelectors[uuid];
+        for (let selectId in itself._allSelectors) {
+            let select = itself._allSelectors[selectId];
             if (!select) {
                 console.warn("出现了多余的selector是空的")
                 continue;
@@ -210,11 +217,11 @@ export class StateCtrl extends Component {
     }
     public addSelector(select: StateSelect) {
         let itself = this;
-        itself._allSelectors[select.uuid] = select;
+        itself._allSelectors[select._selectId] = select;
     }
     public removeSelector(select: StateSelect) {
         let itself = this;
-        delete itself._allSelectors[select.uuid];
+        delete itself._allSelectors[select._selectId];
     }
 }
 
