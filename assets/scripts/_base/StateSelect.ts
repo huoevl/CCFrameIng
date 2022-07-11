@@ -134,7 +134,7 @@ export class StateSelect extends Component {
             return;
         }
         itself._currCtrl = itself._ctrlsMap[value];
-        itself._currCtrl.addSelector(itself);
+        // itself._currCtrl.addSelector(itself);
         itself.updateCtrlPage(itself._currCtrl);
         itself.refPage();
 
@@ -309,13 +309,13 @@ export class StateSelect extends Component {
         itself.node.on(Node.EventType.COLOR_CHANGED, itself._colorChanged, itself);
         itself.node.on(Sprite.EventType.SPRITE_FRAME_CHANGED, itself._spriteChanged, itself)
     }
-    onDestroy() {
-        let itself = this;
-        for (let ctrlId in itself._ctrlsMap) {
-            itself._ctrlsMap[ctrlId].removeSelector(itself);
-        }
+    // onDestroy() {
+    //     let itself = this;
+    //     for (let ctrlId in itself._ctrlsMap) {
+    //         itself._ctrlsMap[ctrlId].removeSelector(itself);
+    //     }
 
-    }
+    // }
     //==============一些监听、设置默认属性=================
     /** 父节点改变 */
     private _parentChanged(oldParent: Node) {
@@ -387,7 +387,7 @@ export class StateSelect extends Component {
     /** 更新状态数量 */
     updateCtrlPage(ctrl: StateCtrl, deleteIndex?: number) {
         let itself = this;
-        if (!ctrl) {
+        if (!ctrl || ctrl._ctrlId != itself.currCtrlId) {
             return;
         }
         if (deleteIndex != -1) {
@@ -452,7 +452,7 @@ export class StateSelect extends Component {
     /** 更新状态 */
     updateState(ctrl: StateCtrl) {
         let itself = this;
-        if (!ctrl) {
+        if (!ctrl || ctrl._ctrlId != itself.currCtrlId) {
             return;
         }
         itself._isFromCtrl = true;

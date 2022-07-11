@@ -52,9 +52,9 @@ export class StateCtrl extends Component {
     private _pageNames: StateValue[] = [];
     /** 上一次选中的下标 */
     private _previousIndex: number = -1;
-    /** 所有绑定选择器的节点 */
-    @property
-    private _allSelectors: { [selectId: string]: StateSelect } = {};
+    // /** 所有绑定选择器的节点 */
+    // @property
+    // private _allSelectors: { [selectId: string]: StateSelect } = {};
     /** 控制器名字 */
     @property(CCString)
     // private _ctrlName: string = `ctrl_${Date.now().toString()}`;
@@ -76,9 +76,9 @@ export class StateCtrl extends Component {
         })
         CCClass.Attr.setClassAttr(itself, "selectedIndex", "enumList", array);
         // console.log(CCClass.Attr.getClassAttrs(itself)[`selectedIndex${CCClass.Attr.DELIMETER}enumList`])
-        if (!itself._allSelectors) {
-            itself._allSelectors = {};
-        }
+        // if (!itself._allSelectors) {
+        //     itself._allSelectors = {};
+        // }
         if (itself.node["__CtrlName"] == void 0) {
             itself.node["__CtrlName"] = 0;
         }
@@ -198,10 +198,11 @@ export class StateCtrl extends Component {
     /** 更新状态 */
     private updateState(type: EnumUpdataType, value?: any) {
         let itself = this;
-        for (let selectId in itself._allSelectors) {
-            let select = itself._allSelectors[selectId];
+        let len = itself.node.children.length;
+        for (let index = 0; index < len; index++) {
+            let child = itself.node.children[index]
+            let select = child.getComponent(StateSelect);
             if (!select) {
-                console.warn("出现了多余的selector是空的")
                 continue;
             }
             if (type == EnumUpdataType.state) {
@@ -215,13 +216,13 @@ export class StateCtrl extends Component {
             }
         }
     }
-    public addSelector(select: StateSelect) {
-        let itself = this;
-        itself._allSelectors[select._selectId] = select;
-    }
-    public removeSelector(select: StateSelect) {
-        let itself = this;
-        delete itself._allSelectors[select._selectId];
-    }
+    // public addSelector(select: StateSelect) {
+    //     let itself = this;
+    //     itself._allSelectors[select._selectId] = select;
+    // }
+    // public removeSelector(select: StateSelect) {
+    //     let itself = this;
+    //     delete itself._allSelectors[select._selectId];
+    // }
 }
 
