@@ -1,22 +1,26 @@
 /**
  * 开发中遇到的一些问题：
  * 1、节点没激活，不会执行：__preload()等生命周期函数
- * 2、一个对象里又_开头的key，不会被序列化
+ * 2、一个对象里有“_”开头的key，不会被序列化
  * 3、代码修改，回到界面组件会先被销毁然后重新添加
  * 4、属性里对象的赋值，是克隆对象里的值，并不是改变指向的地址
  * 5、关闭编辑后再打开，uuid会改变
+ * 6、编辑器删除节点，parent改变的监听也会收到，注意处理
+ * 7、使用setTimeout的地方都是为了延迟执行
  * 
  * 
  * 控制器已知问题：
  * 1、改变文本只能在propvalue那里设置。从自带的string那里改变没有监听方法,
  * 2、改变UIOpacity组件的透明度同个问题。
- * 3、改变四元数也有问题，编辑器只能改变欧拉角。
- * 4、不能使用ctrl+z（撤销），否则一些数据会没掉
+ * 
+ * 3、改变四元数也有问题，只做了改变欧拉角。
+ * 4、不能使用ctrl+z（撤销），否则一些数据会没掉,
+ * 5、好像删除不可逆
  */
 
 
 
-import { CCClass, CCInteger, CCString, Component, Enum, _decorator } from 'cc';
+import { CCClass, CCInteger, CCString, Component, Enum, Node, _decorator } from 'cc';
 import { EDITOR } from 'cc/env';
 import { EnumStateName, EnumUpdataType } from './StateEnum';
 import { StateSelect } from './StateSelect';
@@ -52,12 +56,8 @@ export class StateCtrl extends Component {
     private _pageNames: StateValue[] = [];
     /** 上一次选中的下标 */
     private _previousIndex: number = -1;
-    // /** 所有绑定选择器的节点 */
-    // @property
-    // private _allSelectors: { [selectId: string]: StateSelect } = {};
     /** 控制器名字 */
     @property(CCString)
-    // private _ctrlName: string = `ctrl_${Date.now().toString()}`;
     private _ctrlName: string = "";
     /** 是否正在改变 */
     changing?: boolean;
@@ -76,15 +76,10 @@ export class StateCtrl extends Component {
         })
         CCClass.Attr.setClassAttr(itself, "selectedIndex", "enumList", array);
         // console.log(CCClass.Attr.getClassAttrs(itself)[`selectedIndex${CCClass.Attr.DELIMETER}enumList`])
-        // if (!itself._allSelectors) {
-        //     itself._allSelectors = {};
-        // }
-        if (itself.node["__CtrlName"] == void 0) {
-            itself.node["__CtrlName"] = 0;
-        }
         if (!itself._ctrlName) {
-            itself._ctrlName = `c${itself.node["__CtrlName"]++}`;
+            itself.ctrlName = `ctrl_${Date.now().toString()}`;
         }
+        itself.updateState(EnumUpdataType.init);
     }
     onDestroy() {
         let itself = this;
@@ -198,31 +193,31 @@ export class StateCtrl extends Component {
     /** 更新状态 */
     private updateState(type: EnumUpdataType, value?: any) {
         let itself = this;
-        let len = itself.node.children.length;
-        for (let index = 0; index < len; index++) {
-            let child = itself.node.children[index]
-            let select = child.getComponent(StateSelect);
-            if (!select) {
-                continue;
+        let updateChild = function (parent: Node) {
+            if (!parent || !parent.children.length) {
+                return;
             }
-            if (type == EnumUpdataType.state) {
-                select.updateState(itself);
-            } else if (type == EnumUpdataType.name) {
-                select.updateCtrlName(itself.node);
-            } else if (type == EnumUpdataType.selPage) {
-                select.updateCtrlPage(itself, value);
-            } else if (type == EnumUpdataType.delete) {
-                select.updateDelete(itself);
+            let len = parent.children.length;
+            for (let index = 0; index < len; index++) {
+                let child = parent.children[index]
+                let select = child.getComponent(StateSelect);
+                if (!select) {
+                    continue;
+                }
+                if (type == EnumUpdataType.state) {
+                    select.updateState(itself);
+                } else if (type == EnumUpdataType.name) {
+                    select.updateCtrlName(itself.node);
+                } else if (type == EnumUpdataType.selPage) {
+                    select.updateCtrlPage(itself, value);
+                } else if (type == EnumUpdataType.delete) {
+                    select.updateDelete(itself);
+                } else if (type == EnumUpdataType.init) {
+                    select.updatePreLoad();
+                }
             }
         }
+        updateChild(itself.node);
     }
-    // public addSelector(select: StateSelect) {
-    //     let itself = this;
-    //     itself._allSelectors[select._selectId] = select;
-    // }
-    // public removeSelector(select: StateSelect) {
-    //     let itself = this;
-    //     delete itself._allSelectors[select._selectId];
-    // }
 }
 

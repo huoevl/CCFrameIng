@@ -12,6 +12,8 @@ export enum EnumUpdataType {
     state,
     /** 删除控制器 */
     delete,
+    /** 初始化 */
+    init,
 }
 /** 控制器名字 */
 export enum EnumCtrlName {

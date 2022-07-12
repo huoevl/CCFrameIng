@@ -1,14 +1,19 @@
-/**     _ctrlData数据存储结构
+/**
+ * 这个类主要目的是为了存以下结构数据：状态对应的属性
+ * 
+ *      _ctrlData数据存储结构
  * 
  *      ctrlId:{
- *          $$changedProp$$:[]
  *          $$lastState$$ : state1
  *          $$default$$:{
- *             EnumPropName.active : true,//active
+ *              $$changedProp$$:[]
+ *              $$lastProp$$:EnumPropName.active
+ *              EnumPropName.active : true,//active
  *              1 : v3,//postion, 
  *              .....
  *          }
  *          stateUUId0 : {
+ *              $$changedProp$$:[]
  *              $$lastProp$$:EnumPropName.active
  *              EnumPropName.active : true,//active
  *              .....
@@ -27,7 +32,7 @@ import { CCClass, CCString, Color, Component, Enum, Label, Node, Quat, Size, Spr
 import { EDITOR } from 'cc/env';
 import { StateCtrl } from './StateCtrl';
 import { ConstPropName, EnumCtrlName, EnumPropName, EnumStateName } from './StateEnum';
-const { ccclass, property, executeInEditMode } = _decorator;
+const { ccclass, property, executeInEditMode, disallowMultiple } = _decorator;
 type TransformBit = __private._cocos_core_scene_graph_node_enum__TransformBit
 Enum(EnumCtrlName);
 Enum(EnumStateName);
@@ -38,11 +43,11 @@ type TPropValue = number | boolean | string | Vec3 | Vec2 | Color | Size | Quat 
 type TProp = {
     /** 上一次选择的属性 */
     $$lastProp$$?: number;
+    /** 已经改变的属性 */
+    $$changedProp$$?: { [name: string]: EnumPropName };
     [key: number]: TPropValue,
 }
 type TPage = {
-    /** 已经改变的属性 */
-    $$changedProp$$?: { [name: string]: EnumPropName };
     /** 上次选择的状态 */
     $$lastState$$?: number,
     /** 默认状态属性 */
@@ -54,16 +59,11 @@ type TCtrl = {
 }
 @ccclass('StateSelect')
 @executeInEditMode(true)
+@disallowMultiple(true)
 export class StateSelect extends Component {
     /** root节点所有的ctrl */
     @property
     private _ctrlsMap: { [ctrlId: string]: StateCtrl } = {};
-    /** selectId */
-    @property({ visible: false })
-    _selectId = Date.now();
-    /** 当前中的ctrl */
-    @property
-    private _currCtrl: StateCtrl = null;
     /** 当前选中的ctrl名称对应的ctrlId */
     @property(EnumCtrlName)
     private _currCtrlId: number = null;
@@ -100,15 +100,15 @@ export class StateSelect extends Component {
         }
     }
 
-    @property({ type: EnumStateName, tooltip: "控制器所在节点，仅提示用" })
+    @property({ type: EnumStateName, tooltip: "控制器当前状态" })
     get ctrlState() {
         let itself = this;
-        return itself._currCtrl?.selectedIndex;
+        return itself.getCurrCtrl()?.selectedIndex;
     }
     private set ctrlState(value: number) {
         let itself = this;
-        if (itself._currCtrl) {
-            itself._currCtrl.selectedIndex = value;
+        if (itself.getCurrCtrl()) {
+            itself.getCurrCtrl().selectedIndex = value;
         }
     }
 
@@ -130,12 +130,10 @@ export class StateSelect extends Component {
         itself._currCtrlId = value;
         if (!value) {
             itself.currState = null;
-            itself._currCtrl = null;
             return;
         }
-        itself._currCtrl = itself._ctrlsMap[value];
         // itself._currCtrl.addSelector(itself);
-        itself.updateCtrlPage(itself._currCtrl);
+        itself.updateCtrlPage(itself.getCurrCtrl());
         itself.refPage();
 
     }
@@ -175,14 +173,13 @@ export class StateSelect extends Component {
         }
         itself._propKey = value;
         let propData = itself.getPropData();
-        let pageData = itself.getPageData();
         propData.$$lastProp$$ = value;
         let flag = itself.setPropValue(value)
         if (flag && value != EnumPropName.Non) {
-            pageData.$$changedProp$$ = pageData.$$changedProp$$ || {};
-            pageData.$$changedProp$$[ConstPropName[value]] = value;
-            itself.updateChangedProp();
+            propData.$$changedProp$$ = propData.$$changedProp$$ || {};
+            propData.$$changedProp$$[ConstPropName[value]] = value;
         }
+        itself.updateChangedProp();
     }
     /** 属性值 */
     @property({ tooltip: "当前状态属性值" })
@@ -198,7 +195,7 @@ export class StateSelect extends Component {
         let propData = itself.getPropData();
         propData[itself.propKey] = value;
         if (itself.isImmediately) {
-            itself.updateState(itself._currCtrl);
+            itself.updateState(itself.getCurrCtrl());
         }
     }
     /** 是否立即刷新 */
@@ -216,7 +213,7 @@ export class StateSelect extends Component {
         }
         itself._isImmediately = value;
         if (value) {
-            itself.updateState(itself._currCtrl);
+            itself.updateState(itself.getCurrCtrl());
         }
     }
     /** 是否删除当前属性 */
@@ -226,7 +223,7 @@ export class StateSelect extends Component {
     }
     private set isDeleteCurr(value: boolean) {
         let itself = this;
-        if (!EDITOR) {
+        if (!EDITOR || !value) {
             return;
         }
         if (!itself.currCtrlId) {
@@ -237,16 +234,18 @@ export class StateSelect extends Component {
         }
         //删除属性
         let pageData = itself.getPageData();
-        let $$changedProp$$ = pageData.$$changedProp$$ || {};
-        let name = ConstPropName[itself.propKey];
-        let key = $$changedProp$$[name];
+        let propData = itself.getPropData();
+        let propKey = itself.propKey;
+        delete propData[propKey];
+
+        let $$changedProp$$ = propData.$$changedProp$$ || {};
+        let name = ConstPropName[propKey];
         delete $$changedProp$$[name];
-        for (let state in pageData) {
-            let propData = pageData[state];
-            delete propData[key];
+        let isHas = itself.isOtherHans(itself.getCurrCtrl(), propKey);
+        if (!isHas) {
+            delete pageData.$$default$$[propKey]
         }
         itself.propKey = EnumPropName.Non;
-        itself.updateChangedProp();
     }
 
     /** 已经改变的属性 */
@@ -282,7 +281,7 @@ export class StateSelect extends Component {
         }
         let itself = this;
         itself.updateCtrlName(itself.node.parent);
-        itself.updateCtrlPage(itself._currCtrl);
+        itself.updateCtrlPage(itself.getCurrCtrl());
         if (!itself.currCtrlId) {
             let ctrlIdKeys = Object.keys(itself._ctrlsMap);
             if (ctrlIdKeys.length) {
@@ -309,13 +308,6 @@ export class StateSelect extends Component {
         itself.node.on(Node.EventType.COLOR_CHANGED, itself._colorChanged, itself);
         itself.node.on(Sprite.EventType.SPRITE_FRAME_CHANGED, itself._spriteChanged, itself)
     }
-    // onDestroy() {
-    //     let itself = this;
-    //     for (let ctrlId in itself._ctrlsMap) {
-    //         itself._ctrlsMap[ctrlId].removeSelector(itself);
-    //     }
-
-    // }
     //==============一些监听、设置默认属性=================
     /** 父节点改变 */
     private _parentChanged(oldParent: Node) {
@@ -363,6 +355,9 @@ export class StateSelect extends Component {
     //=============一些界面的显示==============
     /** 更新控制器 */
     updateCtrlName(node: Node) {
+        if (!EDITOR) {
+            return;
+        }
         let itself = this;
         let ctrls = itself.getCtrls(node);
         itself._ctrlsMap = {};
@@ -374,7 +369,7 @@ export class StateSelect extends Component {
     }
     /** 获取所有的Ctrl */
     private getCtrls(node: Node): StateCtrl[] {
-        if (!node) {
+        if (!node || !EDITOR) {
             return [];
         }
         let ctrls = node.getComponents(StateCtrl);
@@ -399,23 +394,15 @@ export class StateSelect extends Component {
                     pageData[state] = next;
                 }
             }
-            let deleteState = pageData[ctrl.states.length];
+            let deleteProp = pageData[ctrl.states.length];
             delete pageData[ctrl.states.length]
             setTimeout(() => {
                 if (itself.currState >= deleteIndex) {
                     itself.currState = itself.currState - 1;
                 }
-                for (let prop in deleteState) {//这里要删除改变的属性
-                    let allNot = true;
-                    for (let index = 0, len = ctrl.states.length; index < len; index++) {
-                        if (pageData[index][prop] != void 0) {
-                            allNot = false;
-                            break;
-                        }
-                    }
-                    if (allNot) {
-                        let name = ConstPropName[prop];
-                        delete pageData.$$changedProp$$[name];
+                for (let prop in deleteProp) {//这里要删除改变的属性
+                    let isHas = itself.isOtherHans(ctrl, prop);
+                    if (!isHas) {
                         delete pageData.$$default$$[prop];
                         itself.updateChangedProp();
                     }
@@ -430,21 +417,34 @@ export class StateSelect extends Component {
     }
     /** 控制器被删除 */
     updateDelete(ctrl: StateCtrl) {
+        if (!EDITOR) {
+            return;
+        }
         let itself = this;
         delete itself._ctrlData[ctrl._ctrlId];
         if (itself.currCtrlId == ctrl._ctrlId) {
             itself._onPreDestroy();
+        } else {
+            setTimeout(() => {
+                itself.updateCtrlName(ctrl.node)
+            });
         }
     }
     /** 已经改变的属性 */
     updateChangedProp() {
         let itself = this;
-        let pageData = itself.getPageData();
+        let propdata = itself.getPropData();
         let arr = [];
-        for (let name in pageData.$$changedProp$$) {
+        for (let name in propdata.$$changedProp$$) {
             arr.push(name);
         }
         itself.changedProp = arr;
+    }
+    updatePreLoad() {
+        let itself = this;
+        if (!itself.node.active) {
+            itself.__preload();
+        }
     }
 
     //==============更具控制器更新的状态 主要代码================
@@ -524,7 +524,27 @@ export class StateSelect extends Component {
         }
     }
     //=============一些计算方式，仅储存值使用=================
-
+    private getCurrCtrl() {
+        let itself = this;
+        return itself._ctrlsMap[itself.currCtrlId]
+    }
+    /**
+     * 其他状态是否有存在这个属性
+     * @param ctrl 
+     * @param prop 
+     */
+    private isOtherHans(ctrl: StateCtrl, prop: number | string) {
+        let itself = this;
+        let isHas = false;
+        let pageData = itself.getPageData();
+        for (let index = 0, len = ctrl.states.length; index < len; index++) {
+            if (pageData[index][prop] != void 0) {
+                isHas = true;
+                break;
+            }
+        }
+        return isHas;
+    }
     /** 获取某个控制器的状态数据 */
     private getPageData(ctrlId?: number) {
         let itself = this;
@@ -852,6 +872,9 @@ export class StateSelect extends Component {
         }
         let itself = this;
         let parent = itself.node.parent;
+        if (!parent || !oldParent) {
+            return;
+        }
         let pageData = itself.getPageData();
         let transCurr = parent.getComponent(UITransform);
         if (!transCurr) {
