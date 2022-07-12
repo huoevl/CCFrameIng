@@ -290,9 +290,6 @@ export class StateSelect extends Component {
                 console.error("没有添加控制器")
                 itself._onPreDestroy();
             }
-        } else {
-            itself.refProp();
-            itself.updateChangedProp();
         }
     }
     onLoad() {
@@ -360,9 +357,10 @@ export class StateSelect extends Component {
         }
         let itself = this;
         let ctrls = itself.getCtrls(node);
-        itself._ctrlsMap = {};
         let arr = ctrls.map((val, i) => {
-            itself._ctrlsMap[val._ctrlId] = val;
+            if (itself._ctrlsMap[val._ctrlId] == void 0) {
+                itself._ctrlsMap[val._ctrlId] = val;
+            }
             return { name: val.ctrlName, value: val._ctrlId }
         })
         CCClass.Attr.setClassAttr(itself, "currCtrlId", "enumList", arr);
@@ -726,7 +724,9 @@ export class StateSelect extends Component {
         if (value == void 0) {
             value = itself.node.active;
             let defaultData = itself.getDefaultData();
-            defaultData[EnumPropName.Active] = value;
+            if (defaultData[EnumPropName.Active] == void 0) {
+                defaultData[EnumPropName.Active] = value;
+            }
         }
         return value;
     }
@@ -737,7 +737,9 @@ export class StateSelect extends Component {
         if (value == void 0) {
             value = itself.node.getPosition();
             let defaultData = itself.getDefaultData();
-            defaultData[EnumPropName.Position] = itself.node.getPosition();
+            if (defaultData[EnumPropName.Position] == void 0) {
+                defaultData[EnumPropName.Position] = itself.node.getPosition();
+            }
         }
         return value;
     }
@@ -759,7 +761,9 @@ export class StateSelect extends Component {
         if (value == void 0) {
             value = Vec3.copy(new Vec3(), itself.node.eulerAngles);
             let defaultData = itself.getDefaultData();
-            defaultData[EnumPropName.Euler] = Vec3.copy(new Vec3(), itself.node.eulerAngles);
+            if (defaultData[EnumPropName.Euler] == void 0) {
+                defaultData[EnumPropName.Euler] = Vec3.copy(new Vec3(), itself.node.eulerAngles);
+            }
         }
         return value;
     }
@@ -770,7 +774,9 @@ export class StateSelect extends Component {
         if (value == void 0) {
             value = itself.node.getScale();
             let defaultData = itself.getDefaultData();
-            defaultData[EnumPropName.Scale] = itself.node.getScale();
+            if (defaultData[EnumPropName.Scale] == void 0) {
+                defaultData[EnumPropName.Scale] = itself.node.getScale();
+            }
         }
         return value;
     }
@@ -785,7 +791,9 @@ export class StateSelect extends Component {
             }
             value = Vec2.copy(new Vec2(), trans.anchorPoint);
             let defaultData = itself.getDefaultData();
-            defaultData[EnumPropName.Anchor] = Vec2.copy(new Vec2(), trans.anchorPoint);
+            if (defaultData[EnumPropName.Anchor] == void 0) {
+                defaultData[EnumPropName.Anchor] = Vec2.copy(new Vec2(), trans.anchorPoint);
+            }
         }
         return value;
     }
@@ -800,7 +808,9 @@ export class StateSelect extends Component {
             }
             value = trans.contentSize.clone();
             let defaultData = itself.getDefaultData();
-            defaultData[EnumPropName.Size] = trans.contentSize.clone();
+            if (defaultData[EnumPropName.Size] == void 0) {
+                defaultData[EnumPropName.Size] = trans.contentSize.clone();
+            }
         }
         return value;
     }
@@ -815,7 +825,9 @@ export class StateSelect extends Component {
             }
             value = sprite_label.color.clone();
             let defaultData = itself.getDefaultData();
-            defaultData[EnumPropName.Color] = sprite_label.color.clone();
+            if (defaultData[EnumPropName.Color] == void 0) {
+                defaultData[EnumPropName.Color] = sprite_label.color.clone();
+            }
         }
         return value;
     }
@@ -830,7 +842,9 @@ export class StateSelect extends Component {
             }
             value = opacity.opacity;
             let defaultData = itself.getDefaultData();
-            defaultData[EnumPropName.Opacity] = value;
+            if (defaultData[EnumPropName.Opacity] == void 0) {
+                defaultData[EnumPropName.Opacity] = value;
+            }
         }
         return value;
     }
@@ -845,7 +859,9 @@ export class StateSelect extends Component {
             }
             value = label.string;
             let defaultData = itself.getDefaultData();
-            defaultData[EnumPropName.Lable] = value;
+            if (defaultData[EnumPropName.Lable] == void 0) {
+                defaultData[EnumPropName.Lable] = value;
+            }
         }
         return value;
     }
@@ -860,7 +876,9 @@ export class StateSelect extends Component {
             }
             value = sprite.spriteFrame;
             let defaultData = itself.getDefaultData();
-            defaultData[EnumPropName.SpriteFrame] = value;
+            if (defaultData[EnumPropName.SpriteFrame] == void 0) {
+                defaultData[EnumPropName.SpriteFrame] = value;
+            }
         }
         return value;
     }
