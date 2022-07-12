@@ -385,7 +385,7 @@ export class StateSelect extends Component {
         if (!ctrl || ctrl._ctrlId != itself.currCtrlId) {
             return;
         }
-        if (deleteIndex != -1) {
+        if (deleteIndex != void 0 && deleteIndex != -1) {
             //被删的index，更新数据,一次只能删一个
             let pageData = itself.getPageData();
             for (let state = deleteIndex; state <= ctrl.states.length - 1; state++) {
