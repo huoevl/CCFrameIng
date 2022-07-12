@@ -199,7 +199,8 @@ export class StateCtrl extends Component {
             }
             let len = parent.children.length;
             for (let index = 0; index < len; index++) {
-                let child = parent.children[index]
+                let child = parent.children[index];
+                updateChild(child);
                 let select = child.getComponent(StateSelect);
                 if (!select) {
                     continue;
