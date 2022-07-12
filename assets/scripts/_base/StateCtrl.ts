@@ -81,6 +81,15 @@ export class StateCtrl extends Component {
         }
         itself.updateState(EnumUpdataType.init);
     }
+    onLoad() {
+        let itself = this;
+        if (!EDITOR) {
+            return;
+        }
+        setTimeout(() => {
+            itself.updateState(EnumUpdataType.state)
+        });
+    }
     onDestroy() {
         let itself = this;
         itself.updateState(EnumUpdataType.delete)
@@ -93,7 +102,9 @@ export class StateCtrl extends Component {
     set ctrlName(value: string) {
         let itself = this;
         itself._ctrlName = value;
-        itself.updateState(EnumUpdataType.name);
+        if (EDITOR) {
+            itself.updateState(EnumUpdataType.name);
+        }
     }
 
     /** 选择的状态下标 */
@@ -111,6 +122,9 @@ export class StateCtrl extends Component {
             itself._previousIndex = itself._selectedIndex;
             itself._selectedIndex = value;
             itself.updateState(EnumUpdataType.state);
+            if (EDITOR) {
+                itself.updateState(EnumUpdataType.prop);
+            }
             itself.changing = false;
         }
     }
@@ -214,7 +228,9 @@ export class StateCtrl extends Component {
                 } else if (type == EnumUpdataType.delete) {
                     select.updateDelete(itself);
                 } else if (type == EnumUpdataType.init) {
-                    select.updatePreLoad();
+                    select.updatePreLoad(itself);
+                } else if (type == EnumUpdataType.prop) {
+                    select.updateProp(itself);
                 }
             }
         }

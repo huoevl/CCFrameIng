@@ -14,6 +14,8 @@ export enum EnumUpdataType {
     delete,
     /** 初始化 */
     init,
+    /** 更新选中的属性 */
+    prop,
 }
 /** 控制器名字 */
 export enum EnumCtrlName {
