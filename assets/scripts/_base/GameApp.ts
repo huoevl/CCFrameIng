@@ -1,5 +1,4 @@
 import { AssetManager, assetManager, Component, instantiate, Prefab, _decorator } from 'cc';
-import { UILogin } from '../login/UILogin';
 const { ccclass, property } = _decorator;
 
 @ccclass('GameApp')
@@ -20,7 +19,7 @@ export class GameApp extends Component {
                 var uiView = instantiate(data);
                 this.node.addChild(uiView);
 
-                uiView.addComponent(UILogin);
+                // uiView.addComponent(UILogin);
             })
         });
 
