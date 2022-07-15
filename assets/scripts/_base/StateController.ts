@@ -12,6 +12,7 @@
  * 控制器已知问题：
  * 1、改变文本只能在propvalue那里设置。从自带的string那里改变没有监听方法,
  * 2、改变UIOpacity组件的透明度同个问题。
+ * 3、图片变回也是这个问题
  * 
  * 3、改变四元数也有问题，只做了改变欧拉角。
  * 4、不能使用ctrl+z（撤销），否则一些数据会没掉,
@@ -40,9 +41,9 @@ export class StateValue {
         itself.stateId = stateId;
     }
 }
-@ccclass('StateCtrl')
+@ccclass('StateController')
 @executeInEditMode(true)
-export class StateCtrl extends Component {
+export class StateController extends Component {
     @property({ visible: false })
     private stateIdAuto = 0;
     /** 控制器唯一id，如果使用uuid每次打开编辑器就会变 */
@@ -63,7 +64,7 @@ export class StateCtrl extends Component {
     changing?: boolean;
 
 
-    __preload() {
+    protected __preload() {
         let itself = this;
         if (!EDITOR) {
             return;
@@ -81,7 +82,7 @@ export class StateCtrl extends Component {
         }
         itself.updateState(EnumUpdataType.init);
     }
-    onLoad() {
+    protected onLoad() {
         let itself = this;
         if (!EDITOR) {
             return;
@@ -90,7 +91,7 @@ export class StateCtrl extends Component {
             itself.updateState(EnumUpdataType.state)
         });
     }
-    onDestroy() {
+    protected onDestroy() {
         let itself = this;
         itself.updateState(EnumUpdataType.delete)
     }
@@ -214,7 +215,10 @@ export class StateCtrl extends Component {
             let len = parent.children.length;
             for (let index = 0; index < len; index++) {
                 let child = parent.children[index];
-                updateChild(child);
+                let notFind = child.getComponent(StateController);
+                if (!notFind) {//这里自己判断一些不需要遍历子节点的，比如列表
+                    updateChild(child);
+                }
                 let select = child.getComponent(StateSelect);
                 if (!select) {
                     continue;

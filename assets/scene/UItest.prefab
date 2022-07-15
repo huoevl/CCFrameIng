@@ -639,11 +639,11 @@
     "_color": {
       "__type__": "cc.Color",
       "r": 255,
-      "g": 0,
-      "b": 0,
+      "g": 255,
+      "b": 255,
       "a": 255
     },
-    "_string": "状态2红色",
+    "_string": "状态1白色",
     "_horizontalAlign": 1,
     "_verticalAlign": 1,
     "_actualFontSize": 40,
@@ -686,7 +686,7 @@
     "_root": {
       "__id__": 1
     },
-    "_propKey": 9,
+    "_propKey": 0,
     "_propValue": {
       "__type__": "cc.Color",
       "r": 255,
@@ -728,10 +728,7 @@
         }
       }
     },
-    "changedProp": [
-      "Lable",
-      "Color"
-    ],
+    "changedProp": [],
     "_id": ""
   },
   {
@@ -751,7 +748,7 @@
     },
     "stateIdAuto": 7,
     "_ctrlId": 1657504539351,
-    "_selectedIndex": 1,
+    "_selectedIndex": 0,
     "_pageNames": [
       {
         "__id__": 33
@@ -937,7 +934,7 @@
     "_root": {
       "__id__": 1
     },
-    "_propKey": 0,
+    "_propKey": 1,
     "_propValue": false,
     "_isDeleteCurr": false,
     "_ctrlData": {
@@ -957,7 +954,9 @@
         }
       }
     },
-    "changedProp": [],
+    "changedProp": [
+      "Active"
+    ],
     "_id": ""
   },
   {
@@ -1140,7 +1139,7 @@
     "_root": {
       "__id__": 1
     },
-    "_propKey": 0,
+    "_propKey": 2,
     "_propValue": {
       "__type__": "cc.Vec3",
       "x": -7.701,
@@ -1175,7 +1174,9 @@
         }
       }
     },
-    "changedProp": [],
+    "changedProp": [
+      "Position"
+    ],
     "_id": ""
   },
   {
@@ -1192,7 +1193,7 @@
     ],
     "value": {
       "__type__": "cc.Vec3",
-      "x": 171.299,
+      "x": -7.701,
       "y": -15.743,
       "z": 0
     }

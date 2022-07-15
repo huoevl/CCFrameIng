@@ -30,8 +30,8 @@
 
 import { CCClass, CCString, Color, Component, Enum, Label, Node, Quat, Size, Sprite, SpriteFrame, UIOpacity, UITransform, Vec2, Vec3, _decorator, __private } from 'cc';
 import { EDITOR } from 'cc/env';
-import { StateCtrl } from './StateCtrl';
-import { ConstPropName, EnumCtrlName, EnumPropName, EnumStateName } from './StateEnum';
+import { StateController } from './StateController';
+import { EnumCtrlName, EnumPropName, EnumStateName } from './StateEnum';
 const { ccclass, property, executeInEditMode, disallowMultiple } = _decorator;
 type TransformBit = __private._cocos_core_scene_graph_node_enum__TransformBit
 Enum(EnumCtrlName);
@@ -63,7 +63,7 @@ type TCtrl = {
 export class StateSelect extends Component {
     /** root节点所有的ctrl */
     @property
-    private _ctrlsMap: { [ctrlId: string]: StateCtrl } = {};
+    private _ctrlsMap: { [ctrlId: string]: StateController } = {};
     /** 当前选中的ctrl名称对应的ctrlId */
     @property(EnumCtrlName)
     private _currCtrlId: number = null;
@@ -152,7 +152,7 @@ export class StateSelect extends Component {
         propData[value] = propValue;
         if (propValue != void 0 && value != EnumPropName.Non) {
             propData.$$changedProp$$ = propData.$$changedProp$$ || {};
-            propData.$$changedProp$$[ConstPropName[value]] = value;
+            propData.$$changedProp$$[EnumPropName[value]] = value;
         }
         itself.updateChangedProp();
     }
@@ -194,7 +194,7 @@ export class StateSelect extends Component {
         delete propData[propKey];
 
         let $$changedProp$$ = propData.$$changedProp$$ || {};
-        let name = ConstPropName[propKey];
+        let name = EnumPropName[propKey];
         delete $$changedProp$$[name];
         let isHas = itself.isOtherHans(itself.getCurrCtrl(), propKey);
         if (!isHas) {
@@ -220,7 +220,7 @@ export class StateSelect extends Component {
     }
 
     _isPreload = false;
-    __preload() {
+    protected __preload() {
         if (!EDITOR) {
             return;
         }
@@ -244,7 +244,7 @@ export class StateSelect extends Component {
             itself.refProp();
         }
     }
-    onLoad() {
+    protected onLoad() {
         let itself = this;
         if (!EDITOR) {
             return;
@@ -318,11 +318,11 @@ export class StateSelect extends Component {
         CCClass.Attr.setClassAttr(itself, "currCtrlId", "enumList", arr);
     }
     /** 获取所有的Ctrl */
-    private getCtrls(node: Node): StateCtrl[] {
+    private getCtrls(node: Node): StateController[] {
         if (!node || !EDITOR) {
             return [];
         }
-        let ctrls = node.getComponents(StateCtrl);
+        let ctrls = node.getComponents(StateController);
         if (ctrls.length) {
             this._root = node;
             return ctrls;
@@ -330,7 +330,7 @@ export class StateSelect extends Component {
         return this.getCtrls(node.parent);
     }
     /** 更新状态数量 */
-    updateCtrlPage(ctrl: StateCtrl, deleteIndex?: number) {
+    updateCtrlPage(ctrl: StateController, deleteIndex?: number) {
         let itself = this;
         if (!ctrl || ctrl._ctrlId != itself.currCtrlId) {
             return;
@@ -362,7 +362,7 @@ export class StateSelect extends Component {
         CCClass.Attr.setClassAttr(itself, "ctrlState", "enumList", arr);
     }
     /** 控制器被删除 */
-    updateDelete(ctrl: StateCtrl) {
+    updateDelete(ctrl: StateController) {
         if (!EDITOR) {
             return;
         }
@@ -386,14 +386,14 @@ export class StateSelect extends Component {
         }
         itself.changedProp = arr;
     }
-    updatePreLoad(ctrl: StateCtrl) {
+    updatePreLoad(ctrl: StateController) {
         let itself = this;
         if (!ctrl || ctrl._ctrlId != itself.currCtrlId) {
             return;
         }
         itself.__preload();
     }
-    updateProp(ctrl: StateCtrl) {
+    updateProp(ctrl: StateController) {
         let itself = this;
         if (!ctrl || ctrl._ctrlId != itself.currCtrlId) {
             return;
@@ -404,7 +404,7 @@ export class StateSelect extends Component {
     //==============更具控制器更新的状态 主要代码================
     private _isFromCtrl: boolean = false;
     /** 更新状态 */
-    updateState(ctrl: StateCtrl) {
+    updateState(ctrl: StateController) {
         let itself = this;
         if (!ctrl || ctrl._ctrlId != itself.currCtrlId) {
             return;
@@ -475,6 +475,12 @@ export class StateSelect extends Component {
                     opacity.opacity = value as number;
                 }
             } break;
+            case EnumPropName.GrayScale: {
+                let sprite = itself.node.getComponent(Sprite);
+                if (sprite) {
+                    sprite.grayscale = value as boolean;
+                }
+            } break;
         }
     }
     //=============一些计算方式，仅储存值使用=================
@@ -487,7 +493,7 @@ export class StateSelect extends Component {
      * @param ctrl 
      * @param prop 
      */
-    private isOtherHans(ctrl: StateCtrl, prop: number | string) {
+    private isOtherHans(ctrl: StateController, prop: number | string) {
         let itself = this;
         let isHas = false;
         let pageData = itself.getPageData();
@@ -583,6 +589,9 @@ export class StateSelect extends Component {
             case EnumPropName.Opacity: {
                 value = itself.getOpacity();
             } break;
+            case EnumPropName.GrayScale: {
+                value = itself.getGrayScale();
+            } break;
             case EnumPropName.Lable: {
                 value = itself.getLable();
             } break;
@@ -666,6 +675,13 @@ export class StateSelect extends Component {
                     return;
                 }
                 defaultData[EnumPropName.Opacity] = opacity.opacity;
+            } break;
+            case EnumPropName.GrayScale: {
+                let sprite = itself.node.getComponent(Sprite);
+                if (!sprite) {
+                    return;
+                }
+                defaultData[EnumPropName.GrayScale] = sprite.grayscale;
             } break;
         }
         if (type == itself.propKey) {
@@ -801,6 +817,23 @@ export class StateSelect extends Component {
             let defaultData = itself.getDefaultData();
             if (defaultData[EnumPropName.Opacity] == void 0) {
                 defaultData[EnumPropName.Opacity] = value;
+            }
+        }
+        return value;
+    }
+    /** 灰度 */
+    private getGrayScale() {
+        let itself = this;
+        let value = itself.getPropValue(EnumPropName.GrayScale) as boolean;
+        if (value == void 0) {
+            let sprite = itself.node.getComponent(Sprite);
+            if (!sprite) {
+                return void 0;
+            }
+            value = sprite.grayscale;
+            let defaultData = itself.getDefaultData();
+            if (defaultData[EnumPropName.GrayScale] == void 0) {
+                defaultData[EnumPropName.GrayScale] = value;
             }
         }
         return value;
