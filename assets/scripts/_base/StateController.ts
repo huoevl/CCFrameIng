@@ -93,7 +93,9 @@ export class StateController extends Component {
     }
     protected onDestroy() {
         let itself = this;
-        itself.updateState(EnumUpdataType.delete)
+        if (EDITOR) {
+            itself.updateState(EnumUpdataType.delete)
+        }
     }
 
     @property({ displayName: "name", tooltip: "控制器唯一名称" })
