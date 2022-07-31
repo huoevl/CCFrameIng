@@ -406,7 +406,7 @@ export class StateSelect extends Component {
     /** 更新状态 */
     updateState(ctrl: StateController) {
         let itself = this;
-        if (!ctrl || ctrl._ctrlId != itself.currCtrlId) {
+        if (!ctrl) {
             return;
         }
         itself._isFromCtrl = true;
