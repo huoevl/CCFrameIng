@@ -46,34 +46,32 @@ interface IComponent extends IBase {
     _enabled: boolean;
 }
 
-//预存结构信息
-interface IComp {
-    name: string;
-    type: string;
-    comps?: IComp[];
-}
 interface IUIData {
     /** 界面名称 */
     UIName?: string;
+    /** 路径 */
     path?: string;
-    fromCC?: { [type: string]: number };
-    comps?: IComp[];
+    /** 节点组件 key：名字，value：类型*/
+    comps?: { [name: string]: string };
 }
 interface IUIMap {
     [fileId: string]: IUIData;
 }
 
-/** CocosCreator节点或者组件默认名称 */
-const Predefined = {
-    "Label": true,
-    "Node": true,
-    "Sprite": true,
-} as { [key: string]: boolean }
-/** 需要绑定的组件 */
-const NeedType = {
-    "cc.Label": true,
-    "cc.Sprite": true,
-} as { [key: string]: boolean }
+/** 定义名字 */
+enum defindName {
+    //=====2D渲染========
+    Node = "node_",
+    Label = "label_",
+    Sprite = "img_",
+    Graphics = "graph_",
+    RichText = "rich_",
+    //======UI========
+    Button = "btn_",
+    EditBox = "edit_",
+    //自定义脚本
+    Script = "$_"
+}
 
 class cmd_prefab {
     /** 配置 */
@@ -116,7 +114,7 @@ class cmd_prefab {
             }
             // let filename=fse.
         }
-        itself.wirteToFile();
+        // itself.wirteToFile();
     }
 
     /** 解析预制体 */
@@ -133,90 +131,73 @@ class cmd_prefab {
         let prefabInfo = jsonArr[rootNode._prefab.__id__] as IPrefabInfo;
         let data = itself.data[prefabInfo.fileId] = itself.data[prefabInfo.fileId] || {} as IUIData;
         data.UIName = rootNode._name;
-        data.fromCC = { Component: 1 };
         data.path = dirPath;
-        let comps = data.comps = data.comps || [];
+        let comps = data.comps = {};
 
         /** 解析节点 */
-        let parseNode = function (dataComps: IComp[], nodeId: number) {
+        let parseNode = function (nodeId: number) {
             let node = jsonArr[nodeId] as INode;
-            let name = node._name;
-            if (!name || Predefined[name]) {
+            if (!node._name || node._name.indexOf("_") == -1) {
                 return;
             }
-            let map = {} as IComp;
-            map.name = name;
-            map.type = node.__type__.split(".")[1];//可能是空节点
-            map.comps = [];
-            dataComps.push(map);
-            //一个节点，我们只需要其中一个正确的组件
-            for (let index = 0, len = node._components.length; index < len; index++) {
-                let result = parseComp(map, name, node._components[index].__id__);
-                if (result) {
-                    break;
-                }
+            let [prefix, suffix] = node._name.split("_");
+            let type = defindName[`${prefix}_`];
+            if (!type) {
+                return;//有下划线，但是不是定义的。
             }
+            if (comps[node._name]) {
+                console.error("名字重复：", node._name);
+            }
+            comps[node._name] = type;
             for (let index = 0, len = node._children.length; index < len; index++) {
-                parseNode(map.comps, node._children[index].__id__)
+                parseNode(node._children[index].__id__)
             }
-        }
-
-        /** 解析组件 */
-        let parseComp = function (dataMap: IComp, name: string, compId: number) {
-            let comp = jsonArr[compId] as IComponent;
-            if (!NeedType[comp.__type__]) {
-                return false;
-            }
-            dataMap.name = name;
-            dataMap.type = comp.__type__.split(".")[1];
-            data.fromCC[dataMap.type] = 1;
-            return true
         }
         for (let index = 0, len = rootNode._children.length; index < len; index++) {
-            parseNode(comps, rootNode._children[index].__id__)
+            parseNode(rootNode._children[index].__id__)
         }
     }
 
     /** 写入 */
-    wirteToFile() {
-        let itself = this;
-        let data = itself.data;
-        for (let key in data) {
-            let clazz = "";
-            let uiMap = data[key];
-            //写入import
-            let ccStr = "import { ";
-            for (let comp in uiMap.fromCC) {
-                ccStr += `${comp}, `;
-            }
-            ccStr = ccStr.substring(0, ccStr.length - 2);
-            ccStr += ' } from "cc";\n\n';
-            clazz += ccStr;
-            //写入class
-            clazz += `export class ${uiMap.UIName} extends Component {\n`;
-            clazz += `\tpublic static NAME = ${uiMap.UIName};\n`;
-            //属性
-            let propStr = "";
-            let constStr = "\tonLoad() {\n\t\tlet itself = this;\n";
-            let prop = function (comps: IComp[], parent: string) {
-                if (!comps || !comps.length) {
-                    return;
-                }
+    // wirteToFile() {
+    //     let itself = this;
+    //     let data = itself.data;
+    //     for (let key in data) {
+    //         let clazz = "";
+    //         let uiMap = data[key];
+    //         //写入import
+    //         let ccStr = "import { Component, ";
+    //         for (let comp in uiMap.comps) {
+    //             ccStr += `${comp}, `;
+    //         }
+    //         ccStr = ccStr.substring(0, ccStr.length - 2);
+    //         ccStr += ' } from "cc";\n\n';
+    //         clazz += ccStr;
+    //         //写入class
+    //         clazz += `export class ${uiMap.UIName} extends Component {\n`;
+    //         clazz += `\tpublic static NAME = ${uiMap.UIName};\n`;
+    //         //属性
+    //         let propStr = "";
+    //         let constStr = "\tonLoad() {\n\t\tlet itself = this;\n";
+    //         let prop = function (comps: IComp[], parent: string) {
+    //             if (!comps || !comps.length) {
+    //                 return;
+    //             }
 
-                for (let index = 0, len = comps.length; index < len; index++) {
-                    let comp = comps[index];
-                    propStr += `\tpublic ${comp.name}: ${comp.type};\n`;
-                    constStr += `\t\t${parent}.${comp.name} = ${parent}.node.getChildByName("${comp.name}").getComponent(${comp.type});\n`;
-                    prop(comp.comps, `${parent}.${comp.name}`);
-                }
-            }
-            prop(uiMap.comps, "itself");
+    //             for (let index = 0, len = comps.length; index < len; index++) {
+    //                 let comp = comps[index];
+    //                 propStr += `\tpublic ${comp.name}: ${comp.type};\n`;
+    //                 constStr += `\t\t${parent}.${comp.name} = ${parent}.node.getChildByName("${comp.name}").getComponent(${comp.type});\n`;
+    //                 prop(comp.comps, `${parent}.${comp.name}`);
+    //             }
+    //         }
+    //         prop(uiMap.comps, "itself");
 
-            constStr += `\t}\n}`
-            clazz += `${propStr}\n${constStr}`;
-            _fse.writeFileSync(_path.join(uiMap.path, `${uiMap.UIName}.ts`), clazz);
-        }
+    //         constStr += `\t}\n}`
+    //         clazz += `${propStr}\n${constStr}`;
+    //         _fse.writeFileSync(_path.join(uiMap.path, `${uiMap.UIName}.ts`), clazz);
+    //     }
 
-    }
+    // }
 }
 new cmd_prefab()
