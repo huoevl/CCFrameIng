@@ -189,7 +189,7 @@
       "b": 0,
       "a": 255
     },
-    "_string": "状态2红色",
+    "_string": "状态1白色",
     "_horizontalAlign": 1,
     "_verticalAlign": 1,
     "_actualFontSize": 40,
@@ -232,10 +232,10 @@
     "_root": {
       "__id__": 1
     },
-    "_propKey": 9,
+    "_propKey": 0,
     "_propValue": {
       "__type__": "cc.Color",
-      "r": 255,
+      "r": 0,
       "g": 0,
       "b": 0,
       "a": 255
@@ -250,7 +250,7 @@
           "3": "状态2红色",
           "9": {
             "__type__": "cc.Color",
-            "r": 255,
+            "r": 0,
             "g": 0,
             "b": 0,
             "a": 255
@@ -258,7 +258,8 @@
           "$$lastProp$$": 9,
           "$$changedProp$$": {
             "Lable": 3,
-            "Color": 9
+            "Color": 9,
+            "Size": 9
           }
         },
         "$$default$$": {
@@ -273,10 +274,7 @@
         }
       }
     },
-    "changedProp": [
-      "Lable",
-      "Color"
-    ],
+    "changedProp": [],
     "_id": ""
   },
   {
@@ -296,7 +294,7 @@
     },
     "stateIdAuto": 2,
     "_ctrlId": 1659260003649,
-    "_selectedIndex": 1,
+    "_selectedIndex": 0,
     "_pageNames": [
       {
         "__id__": 13
@@ -397,7 +395,7 @@
         "__id__": 18
       }
     ],
-    "_active": false,
+    "_active": true,
     "_components": [
       {
         "__id__": 24
@@ -734,7 +732,7 @@
     "_root": {
       "__id__": 1
     },
-    "_propKey": 1,
+    "_propKey": 0,
     "_propValue": false,
     "_isDeleteCurr": false,
     "_ctrlData": {
@@ -754,9 +752,7 @@
         }
       }
     },
-    "changedProp": [
-      "Active"
-    ],
+    "changedProp": [],
     "_id": ""
   },
   {
@@ -806,7 +802,7 @@
     },
     "_lpos": {
       "__type__": "cc.Vec3",
-      "x": 24.299,
+      "x": 189.299,
       "y": -10.743,
       "z": 0
     },
@@ -932,7 +928,7 @@
       "b": 0,
       "a": 255
     },
-    "_string": "确 定",
+    "_string": "跳 转",
     "_horizontalAlign": 1,
     "_verticalAlign": 1,
     "_actualFontSize": 20,
@@ -975,7 +971,7 @@
     "_root": {
       "__id__": 1
     },
-    "_propKey": 3,
+    "_propKey": 0,
     "_propValue": "确 定",
     "_isDeleteCurr": false,
     "_ctrlData": {
@@ -987,7 +983,8 @@
           "3": "确 定",
           "$$lastProp$$": 3,
           "$$changedProp$$": {
-            "Lable": 3
+            "Lable": 3,
+            "Label": 3
           }
         },
         "$$default$$": {
@@ -995,9 +992,7 @@
         }
       }
     },
-    "changedProp": [
-      "Lable"
-    ],
+    "changedProp": [],
     "_id": ""
   },
   {
@@ -1175,7 +1170,7 @@
     "_root": {
       "__id__": 1
     },
-    "_propKey": 2,
+    "_propKey": 0,
     "_propValue": {
       "__type__": "cc.Vec3",
       "x": 24.299,
@@ -1210,9 +1205,7 @@
         }
       }
     },
-    "changedProp": [
-      "Position"
-    ],
+    "changedProp": [],
     "_id": ""
   },
   {

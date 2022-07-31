@@ -28,7 +28,7 @@
  * 
  */
 
-import { CCClass, CCString, Color, Component, Enum, Label, Node, Quat, Size, Sprite, SpriteFrame, UIOpacity, UITransform, Vec2, Vec3, _decorator, __private } from 'cc';
+import { CCClass, CCString, Color, Component, Enum, Font, Label, LabelOutline, Node, Quat, Size, Sprite, SpriteFrame, UIOpacity, UITransform, Vec2, Vec3, _decorator, __private } from 'cc';
 import { EDITOR } from 'cc/env';
 import { StateController } from './StateController';
 import { EnumCtrlName, EnumPropName, EnumStateName } from './StateEnum';
@@ -39,7 +39,7 @@ Enum(EnumStateName);
 Enum(EnumPropName);
 
 /** 属性类型 */
-type TPropValue = number | boolean | string | Vec3 | Vec2 | Color | Size | Quat | SpriteFrame;
+type TPropValue = number | boolean | string | Vec3 | Vec2 | Color | Size | Quat | SpriteFrame | Font;
 type TProp = {
     /** 上一次选择的属性 */
     $$lastProp$$?: number;
@@ -430,10 +430,22 @@ export class StateSelect extends Component {
             case EnumPropName.Position: {
                 itself.node.position = value as Vec3;
             } break;
-            case EnumPropName.Lable: {
+            case EnumPropName.Label: {
                 let label = itself.node.getComponent(Label);
                 if (label) {
                     label.string = value as string;
+                }
+            } break;
+            case EnumPropName.Font: {
+                let label = itself.node.getComponent(Label);
+                if (label) {
+                    label.font = value as Font;
+                }
+            } break;
+            case EnumPropName.LabelOutline: {
+                let labelOutline = itself.node.getComponent(LabelOutline);
+                if (labelOutline) {
+                    labelOutline.color = value as Color;
                 }
             } break;
             case EnumPropName.SpriteFrame: {
@@ -592,8 +604,14 @@ export class StateSelect extends Component {
             case EnumPropName.GrayScale: {
                 value = itself.getGrayScale();
             } break;
-            case EnumPropName.Lable: {
-                value = itself.getLable();
+            case EnumPropName.Label: {
+                value = itself.getLabel();
+            } break;
+            case EnumPropName.Font: {
+                value = itself.getFont();
+            } break;
+            case EnumPropName.LabelOutline: {
+                value = itself.getLabelOutline();
             } break;
             case EnumPropName.SpriteFrame: {
                 value = itself.getSpriteFrame();
@@ -611,8 +629,8 @@ export class StateSelect extends Component {
             return;//不是编辑器改变
         }
         // let defaultData = itself.getDefaultData();
-        let defaultData = itself.getPropData();
-        if (defaultData[type] == void 0) {
+        let getPropData = itself.getPropData();
+        if (getPropData[type] == void 0) {
             return;//没有改变这个属性   
         }
         switch (type) {
@@ -620,68 +638,82 @@ export class StateSelect extends Component {
                 return;
             }
             case EnumPropName.Active: {
-                defaultData[EnumPropName.Active] = itself.node.active;
+                getPropData[EnumPropName.Active] = itself.node.active;
             } break;
             case EnumPropName.Position: {
-                Vec3.copy(defaultData[EnumPropName.Position] as Vec3, itself.node.position);
+                Vec3.copy(getPropData[EnumPropName.Position] as Vec3, itself.node.position);
             } break;
-            case EnumPropName.Lable: {
+            case EnumPropName.Label: {
                 let label = itself.node.getComponent(Label);
                 if (!label) {
                     return;
                 }
-                defaultData[EnumPropName.Lable] = label.string;
+                getPropData[EnumPropName.Label] = label.string;
+            } break;
+            case EnumPropName.Font: {
+                let label = itself.node.getComponent(Label);
+                if (!label) {
+                    return;
+                }
+                getPropData[EnumPropName.Font] = label.font;
+            } break;
+            case EnumPropName.LabelOutline: {
+                let labelOutline = itself.node.getComponent(LabelOutline);
+                if (!labelOutline) {
+                    return;
+                }
+                (getPropData[EnumPropName.LabelOutline] as Color).set(labelOutline.color);
             } break;
             case EnumPropName.SpriteFrame: {
                 let sprite = itself.node.getComponent(Sprite);
                 if (!sprite) {
                     return;
                 }
-                defaultData[EnumPropName.SpriteFrame] = sprite.spriteFrame;
+                getPropData[EnumPropName.SpriteFrame] = sprite.spriteFrame;
             } break;
             // case EnumPropName.Rotation: {
             //     Vec3.copy(defaultData[EnumPropName.Rotation] as Quat, itself.node.rotation);
             // } break;
             case EnumPropName.Euler: {
-                Vec3.copy(defaultData[EnumPropName.Euler] as Vec3, itself.node.eulerAngles);
+                Vec3.copy(getPropData[EnumPropName.Euler] as Vec3, itself.node.eulerAngles);
             } break;
             case EnumPropName.Scale: {
-                Vec3.copy(defaultData[EnumPropName.Scale] as Vec3, itself.node.scale);
+                Vec3.copy(getPropData[EnumPropName.Scale] as Vec3, itself.node.scale);
             } break;
             case EnumPropName.Anchor: {
                 let trans = itself.node.getComponent(UITransform);
                 if (!trans) {
                     return;
                 }
-                Vec2.copy(defaultData[EnumPropName.Anchor] as Vec2, trans.anchorPoint);
+                Vec2.copy(getPropData[EnumPropName.Anchor] as Vec2, trans.anchorPoint);
             } break;
             case EnumPropName.Size: {
                 let trans = itself.node.getComponent(UITransform);
                 if (!trans) {
                     return;
                 }
-                (defaultData[EnumPropName.Size] as Size).set(trans.contentSize);
+                (getPropData[EnumPropName.Size] as Size).set(trans.contentSize);
             } break;
             case EnumPropName.Color: {
                 let sprite_label = itself.node.getComponent(Sprite) || itself.node.getComponent(Label);
                 if (!sprite_label) {
                     return;
                 }
-                (defaultData[EnumPropName.Color] as Color).set(sprite_label.color);
+                (getPropData[EnumPropName.Color] as Color).set(sprite_label.color);
             } break;
             case EnumPropName.Opacity: {
                 let opacity = itself.node.getComponent(UIOpacity);
                 if (!opacity) {
                     return;
                 }
-                defaultData[EnumPropName.Opacity] = opacity.opacity;
+                getPropData[EnumPropName.Opacity] = opacity.opacity;
             } break;
             case EnumPropName.GrayScale: {
                 let sprite = itself.node.getComponent(Sprite);
                 if (!sprite) {
                     return;
                 }
-                defaultData[EnumPropName.GrayScale] = sprite.grayscale;
+                getPropData[EnumPropName.GrayScale] = sprite.grayscale;
             } break;
         }
         if (type == itself.propKey) {
@@ -839,9 +871,9 @@ export class StateSelect extends Component {
         return value;
     }
     /** 文本 */
-    private getLable() {
+    private getLabel() {
         let itself = this;
-        let value = itself.getPropValue(EnumPropName.Lable) as string;
+        let value = itself.getPropValue(EnumPropName.Label) as string;
         if (value == void 0) {
             let label = itself.node.getComponent(Label);
             if (!label) {
@@ -849,8 +881,42 @@ export class StateSelect extends Component {
             }
             value = label.string;
             let defaultData = itself.getDefaultData();
-            if (defaultData[EnumPropName.Lable] == void 0) {
-                defaultData[EnumPropName.Lable] = value;
+            if (defaultData[EnumPropName.Label] == void 0) {
+                defaultData[EnumPropName.Label] = value;
+            }
+        }
+        return value;
+    }
+    /** 字体 */
+    private getFont() {
+        let itself = this;
+        let value = itself.getPropValue(EnumPropName.Font) as Font;
+        if (value == void 0) {
+            let label = itself.node.getComponent(Label);
+            if (!label) {
+                return void 0;
+            }
+            value = label.font;
+            let defaultData = itself.getDefaultData();
+            if (defaultData[EnumPropName.Font] == void 0) {
+                defaultData[EnumPropName.Font] = value;
+            }
+        }
+        return value;
+    }
+    /** 文本描边 */
+    private getLabelOutline() {
+        let itself = this;
+        let value = itself.getPropValue(EnumPropName.LabelOutline) as Color;
+        if (value == void 0) {
+            let labelOutline = itself.node.getComponent(LabelOutline);
+            if (!labelOutline) {
+                return void 0;
+            }
+            value = labelOutline.color.clone();
+            let defaultData = itself.getDefaultData();
+            if (defaultData[EnumPropName.LabelOutline] == void 0) {
+                defaultData[EnumPropName.LabelOutline] = value.clone();
             }
         }
         return value;

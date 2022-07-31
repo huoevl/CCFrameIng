@@ -2,7 +2,7 @@
  * 开发中遇到的一些问题：
  * 1、节点没激活，不会执行：__preload()等生命周期函数
  * 2、一个对象里有“_”开头的key，不会被序列化
- * 3、代码修改，回到界面组件会先被销毁然后重新添加
+ * 3、@executeInEditMode(true)代码修改，回到界面组件会先被销毁然后重新添加
  * 4、属性里对象的赋值，是克隆对象里的值，并不是改变指向的地址
  * 5、关闭编辑后再打开，uuid会改变
  * 6、编辑器删除节点，parent改变的监听也会收到，注意处理
@@ -11,8 +11,7 @@
  * 
  * 控制器已知问题：
  * 1、改变文本只能在propvalue那里设置。从自带的string那里改变没有监听方法,
- * 2、改变UIOpacity组件的透明度同个问题。
- * 3、图片变回也是这个问题
+ * 2、改变：透明度（UIOpacity）、变灰、描边颜色、字体 ===》同个问题。
  * 
  * 3、改变四元数也有问题，只做了改变欧拉角。
  * 4、不能使用ctrl+z（撤销），否则一些数据会没掉,
@@ -62,6 +61,8 @@ export class StateController extends Component {
     private _ctrlName: string = "";
     /** 是否正在改变 */
     changing?: boolean;
+    /** 是否初始 ,假设编辑器默认状态是2，代码里面正好第一次状态也是2，会导致selecteindex那里不刷新状态。 */
+    isInit: boolean = true;
 
 
     protected __preload() {
@@ -117,7 +118,8 @@ export class StateController extends Component {
     }
     public set selectedIndex(value: EnumStateName) {
         let itself = this;
-        if (itself._selectedIndex != value) {
+        if (itself.isInit || itself._selectedIndex != value) {
+            itself.isInit = false;
             if (value > itself._pageNames.length - 1) {
                 throw "index out of bounds:（越界） " + value;
             }

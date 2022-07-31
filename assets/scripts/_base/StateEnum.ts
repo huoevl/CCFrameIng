@@ -29,7 +29,9 @@ export enum EnumPropName {
     /** 位置 */
     Position,
     /** 文本 */
-    Lable,
+    Label,
+    /** 描边 */
+    LabelOutline,
     /** 图片 */
     SpriteFrame,
     // /** 旋转、四元数*/
@@ -48,4 +50,6 @@ export enum EnumPropName {
     Opacity,
     /** 灰度 */
     GrayScale,
+    /** 字体 */
+    Font,
 }
