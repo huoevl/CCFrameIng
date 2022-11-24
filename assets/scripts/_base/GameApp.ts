@@ -4,13 +4,13 @@ const { ccclass, property } = _decorator;
 @ccclass('GameApp')
 export class GameApp extends Component {
     onLoad() {
-        assetManager.loadBundle("ui", (err, data: AssetManager.Bundle) => {
+        assetManager.loadBundle("prefab", (err, data: AssetManager.Bundle) => {
             if (err) {
                 console.log("load bundle erro: ", err);
                 return;
             }
 
-            let bound = assetManager.getBundle("ui");
+            let bound = assetManager.getBundle("prefab");
             if (!bound) {
                 console.error("没有bound")
                 return

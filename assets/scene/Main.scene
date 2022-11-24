@@ -24,11 +24,11 @@
     "_active": true,
     "_components": [],
     "_prefab": {
-      "__id__": 14
+      "__id__": 13
     },
     "autoReleaseAssets": false,
     "_globals": {
-      "__id__": 15
+      "__id__": 14
     },
     "_id": "ace24697-bece-4532-a84c-447ebd833744"
   },
@@ -114,6 +114,8 @@
     "_screenScale": 1,
     "_visibility": 1107296256,
     "_targetTexture": null,
+    "_cameraType": -1,
+    "_trackingType": 0,
     "_id": "8de31jekhERKBa1Rop7qNl"
   },
   {
@@ -131,6 +133,9 @@
     "_active": true,
     "_components": [
       {
+        "__id__": 9
+      },
+      {
         "__id__": 10
       },
       {
@@ -138,9 +143,6 @@
       },
       {
         "__id__": 12
-      },
-      {
-        "__id__": 13
       }
     ],
     "_prefab": null,
@@ -190,9 +192,6 @@
       },
       {
         "__id__": 8
-      },
-      {
-        "__id__": 9
       }
     ],
     "_prefab": null,
@@ -288,21 +287,6 @@
     "_id": "e4YzgJhnZEEIRtOi51uAGC"
   },
   {
-    "__type__": "cc.animation.AnimationController",
-    "_name": "",
-    "_objFlags": 0,
-    "node": {
-      "__id__": 5
-    },
-    "_enabled": true,
-    "__prefab": null,
-    "graph": {
-      "__uuid__": "44a3300f-a772-4b54-aba6-8a3559a2a770",
-      "__expectedType__": "cc.animation.AnimationGraph"
-    },
-    "_id": "2c495Kil9HJKt5qWjXPd+O"
-  },
-  {
     "__type__": "cc.UITransform",
     "_name": "",
     "_objFlags": 0,
@@ -376,7 +360,6 @@
     },
     "_enabled": true,
     "__prefab": null,
-    "_visFlags": 0,
     "_customMaterial": null,
     "_srcBlendFactor": 2,
     "_dstBlendFactor": 4,
@@ -413,19 +396,19 @@
   {
     "__type__": "cc.SceneGlobals",
     "ambient": {
-      "__id__": 16
+      "__id__": 15
     },
     "shadows": {
-      "__id__": 17
+      "__id__": 16
     },
     "_skybox": {
-      "__id__": 18
+      "__id__": 17
     },
     "fog": {
-      "__id__": 19
+      "__id__": 18
     },
     "octree": {
-      "__id__": 20
+      "__id__": 19
     }
   },
   {
@@ -519,7 +502,11 @@
     "_diffuseMapHDR": null,
     "_diffuseMapLDR": null,
     "_enabled": true,
-    "_useHDR": true
+    "_useHDR": true,
+    "_editableMaterial": null,
+    "_reflectionHDR": null,
+    "_reflectionLDR": null,
+    "_rotationAngle": 0
   },
   {
     "__type__": "cc.FogInfo",
