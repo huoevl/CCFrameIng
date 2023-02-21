@@ -35,4 +35,4 @@
     文章3：[Cocos Creator ScrollView 性能优化](https://mp.weixin.qq.com/s/XjjwbmCzTQZd6snN82Q8jA) 
 
 10. 跨域： 
-    > 浏览器桌面快捷方式-->属性-->目标，加上：**--args --disable-web-security  --user-data-dir=D:\chromeTemp**  （D:\chromeTemp这里可随便一个文件夹）
+    > 浏览器桌面快捷方式-->右键-->属性-->目标，加上：**--args --disable-web-security  --user-data-dir=D:\chromeTemp**  （D:\chromeTemp这里可随便一个文件夹）
