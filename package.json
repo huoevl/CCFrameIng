@@ -1,7 +1,7 @@
 {
   "_sourceId": "c30b28da-749e-479b-bcb6-cecd8d7be9e3",
   "creator": {
-    "version": "3.7.0"
+    "version": "3.7.1"
   },
   "devDependencies": {
     "@types/fs-extra": "^9.0.13",
@@ -9,7 +9,7 @@
     "fs-extra": "^10.1.0",
     "json_to_lua": "^1.1.1"
   },
-  "name": "CCTest01",
+  "name": "CCFrameIng",
   "scripts": {
     "cmd_prefab": "ts-node ./cmd/cmd_prefab.ts"
   },

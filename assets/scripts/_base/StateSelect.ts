@@ -28,12 +28,11 @@
  * 
  */
 
-import { CCClass, CCString, Color, Component, Enum, Font, Label, LabelOutline, Node, Quat, Size, Sprite, SpriteFrame, UIOpacity, UITransform, Vec2, Vec3, _decorator, __private } from 'cc';
+import { CCClass, CCString, Color, Component, Enum, Font, Label, LabelOutline, Node, Quat, Size, Sprite, SpriteFrame, TransformBit, UIOpacity, UITransform, Vec2, Vec3, _decorator } from 'cc';
 import { EDITOR } from 'cc/env';
 import { StateController } from './StateController';
 import { EnumCtrlName, EnumPropName, EnumStateName } from './StateEnum';
 const { ccclass, property, executeInEditMode, disallowMultiple } = _decorator;
-type TransformBit = __private._cocos_core_scene_graph_node_enum__TransformBit
 Enum(EnumCtrlName);
 Enum(EnumStateName);
 Enum(EnumPropName);
