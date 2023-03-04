@@ -36,3 +36,7 @@
 
 10. 跨域： 
     > 浏览器桌面快捷方式-->右键-->属性-->目标，加上：**--args --disable-web-security  --user-data-dir=D:\chromeTemp**  （D:\chromeTemp这里可随便一个文件夹）
+11. [Scene/Prefab里，自定义组件的__type__是如何计算的？](https://forum.cocos.org/t/scene-prefab---type--/37966)   
+    > 怎么通过这个type，找到对应的组件的名字？用 cc.js._getClassById，但这个查找操作不应该是用户需要进行的   
+    在编辑器下，可以使用 Editor.UuidUtils.uuid() 获得新的唯一 id;
+12. [3.0 TypeScript 问题答疑及经验分享](https://forum.cocos.org/t/topic/106995)
