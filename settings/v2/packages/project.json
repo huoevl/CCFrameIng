@@ -8,5 +8,8 @@
       "fitWidth": true
     }
   },
-  "custom_joint_texture_layouts": []
+  "custom_joint_texture_layouts": [],
+  "script": {
+    "importMap": "project://import-map.json"
+  }
 }

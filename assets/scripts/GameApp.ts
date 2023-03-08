@@ -1,6 +1,5 @@
 import { AssetManager, assetManager, Component, instantiate, Prefab, _decorator } from 'cc';
 const { ccclass, property } = _decorator;
-
 @ccclass('GameApp')
 export class GameApp extends Component {
     onLoad() {
@@ -15,12 +14,12 @@ export class GameApp extends Component {
                 console.error("没有bound")
                 return
             }
-            bound.load("login/Login", Prefab, (err, data) => {
-                var uiView = instantiate(data);
-                this.node.addChild(uiView);
+            // bound.load("login/Login", Prefab, (err, data) => {
+            //     var uiView = instantiate(data);
+            //     this.node.addChild(uiView);
 
-                // uiView.addComponent(UILogin);
-            })
+            //     // uiView.addComponent(UILogin);
+            // })
         });
 
 
