@@ -1,6 +1,8 @@
-import { Component, Node } from "cc";
-
+import { AssetManager, Component, Node, view } from "cc";
+import * as fgui from "fairygui-cc";
 export class UIUtils {
+    static bundle: AssetManager.Bundle;
+    static uiMap: { [viewName: string]: Node } = {};
     /** 界面组件绑定 */
     static bindNode(comp: Component) {
         let compDefinde = comp["compDefinde"];
@@ -16,5 +18,25 @@ export class UIUtils {
             }
         }
         bind(comp.node);
+    }
+
+    static show(clazz: any) {
+        let pkgName = "ui/" + clazz["PKG"];
+        fgui.UIPackage.loadPackage(UIUtils.bundle, pkgName, (err, pkg) => {
+            if (!fgui.UIPackage.getByName(pkgName)) {
+                fgui.UIPackage.addPackage(pkgName);
+            }
+            let view = clazz.createInstance();
+            UIUtils.uiMap[clazz.CLS_NAME] = view;
+            fgui.GRoot.inst.addChild(view);
+        });
+    }
+
+    static close(clazz: any) {
+        let view = UIUtils.uiMap[clazz.CLS_NAME];
+        let pkgName = "ui/" + clazz["PKG"];
+        view.parent.removeChild(view);
+        view.destroy();
+        fgui.UIPackage.removePackage(pkgName);
     }
 }

@@ -8,7 +8,7 @@ export default class UI_GameThreeHome extends fgui.GComponent {
 	public btn_award: fgui.GButton;
 	public btn_help: fgui.GButton;
 	public btn_buy: fgui.GButton;
-	public btn_start: fgui.GButton;
+	public btn_start: fgui.GButton; 
 	public btn_rank: fgui.GButton;
 	public img_item: fgui.GLoader;
 	public label_item: fgui.GTextField;

@@ -7,15 +7,12 @@
     "strict": false,
     "suppressImplicitAnyIndexErrors": false,
     "noImplicitAny": false,
-    "types": [
-      "node"
-    ],
     "isolatedModules": false,
     // "allowSyntheticDefaultImports": true
     "paths": {
       // 注意：这里的相对路径是相对于 tsconfig.json 所在的路径
       // 由于本例中 tsconfig.json 和 import-map.json 位于同一目录，因此这里的相对路径也相似。
-      "fairygui-cc": ["./assets/libs/fairygui.mjs"],
+      "fairygui": ["./assets/libs/fairygui"],
   }
   },
   

@@ -1,5 +1,5 @@
 
-import { gameThreeBinder } from "../autoui/gameThree/gameThreeBinder";
+import { gameThreeBinder } from "../../autoui/gameThree/gameThreeBinder";
 
 import * as fgui from "fairygui-cc";
 import { UIGameThreeHome } from "./view/UIGameThreeHome";

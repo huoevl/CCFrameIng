@@ -1,0 +1,11 @@
+{
+  "name": "framework",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "fairygui-cc": "^1.1.1"
+  }
+}
