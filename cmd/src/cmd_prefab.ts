@@ -16,7 +16,7 @@ const defindName = {
 /**
  * 从预制体生成代码模板，
  */
-class cmd_prefab {
+export class CmdPrefab {
 
 }
-new cmd_prefab()
+new CmdPrefab()

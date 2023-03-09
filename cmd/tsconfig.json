@@ -1,15 +1,9 @@
 {
     "compilerOptions": {
         "target": "es5",
-        "declaration": true,
-        "outFile": "../assets/libs/ccfi.js",
-        "allowJs": true,
         "experimentalDecorators": true,
-        "skipLibCheck": true,
-        "lib": [
-            "es5",
-            "dom",
-            "es2015.promise"
-        ]
-    },
+        "esModuleInterop": true,
+        "allowJs": true,
+        "outDir": "bin"
+    }
 }
