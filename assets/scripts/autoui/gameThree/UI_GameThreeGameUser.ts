@@ -1,6 +1,5 @@
 /** This is an automatically generated class by FairyGUI. Please do not modify it. **/
 
-import UI_GameThreeMc from "./UI_GameThreeMc";
 
 import * as fgui from "fairygui-cc";
 export default class UI_GameThreeGameUser extends fgui.GComponent {
@@ -9,7 +8,7 @@ export default class UI_GameThreeGameUser extends fgui.GComponent {
 	public ctrl_run:fgui.Controller;
 	public ctrl_ren:fgui.Controller;
 	public img_user:fgui.GLoader;
-	public mc_bulingbuling:UI_GameThreeMc;
+	public mc_bulingbuling:fgui.GComponent;
 	public mc_jujujuju:fgui.GLoader;
 	public mc_water:fgui.GLoader;
 	public t0:fgui.Transition;
@@ -31,7 +30,7 @@ export default class UI_GameThreeGameUser extends fgui.GComponent {
 		self.ctrl_run = self.getController("ctrl_run");
 		self.ctrl_ren = self.getController("ctrl_ren");
 		self.img_user = <fgui.GLoader>(self.getChild("img_user"));
-		self.mc_bulingbuling = <UI_GameThreeMc>(self.getChild("mc_bulingbuling"));
+		self.mc_bulingbuling = <fgui.GComponent>(self.getChild("mc_bulingbuling"));
 		self.mc_jujujuju = <fgui.GLoader>(self.getChild("mc_jujujuju"));
 		self.mc_water = <fgui.GLoader>(self.getChild("mc_water"));
 		self.t0 = self.getTransition("t0");

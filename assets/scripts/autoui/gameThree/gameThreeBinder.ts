@@ -6,7 +6,6 @@ import UI_GameThreeGameDi from "./UI_GameThreeGameDi";
 import UI_GameThreeGameWall from "./UI_GameThreeGameWall";
 import UI_GameThreeGameBox from "./UI_GameThreeGameBox";
 import UI_GameThreeGameItem from "./UI_GameThreeGameItem";
-import UI_GameThreeMc from "./UI_GameThreeMc";
 import UI_GameThreeRank from "./UI_GameThreeRank";
 import UI_GameThreeRankItem from "./UI_GameThreeRankItem";
 import UI_GameThreeExplain from "./UI_GameThreeExplain";
@@ -38,7 +37,6 @@ export class gameThreeBinder {
 		fgui.UIObjectFactory.setExtension(UI_GameThreeGameWall.URL, UI_GameThreeGameWall);
 		fgui.UIObjectFactory.setExtension(UI_GameThreeGameBox.URL, UI_GameThreeGameBox);
 		fgui.UIObjectFactory.setExtension(UI_GameThreeGameItem.URL, UI_GameThreeGameItem);
-		fgui.UIObjectFactory.setExtension(UI_GameThreeMc.URL, UI_GameThreeMc);
 		fgui.UIObjectFactory.setExtension(UI_GameThreeRank.URL, UI_GameThreeRank);
 		fgui.UIObjectFactory.setExtension(UI_GameThreeRankItem.URL, UI_GameThreeRankItem);
 		fgui.UIObjectFactory.setExtension(UI_GameThreeExplain.URL, UI_GameThreeExplain);

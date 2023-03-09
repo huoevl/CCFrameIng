@@ -1,13 +1,12 @@
 /** This is an automatically generated class by FairyGUI. Please do not modify it. **/
 
-import UI_GameThreeMc from "./UI_GameThreeMc";
 
 import * as fgui from "fairygui-cc";
 export default class UI_GameThreeGameWallItem extends fgui.GComponent {
 
 	public ctrl_ren:fgui.Controller;
 	public img_wall:fgui.GLoader;
-	public comp_mc:UI_GameThreeMc;
+	public comp_mc:fgui.GComponent;
 	public mc_temp:fgui.GLoader;
 	public t1:fgui.Transition;
 
@@ -23,7 +22,7 @@ export default class UI_GameThreeGameWallItem extends fgui.GComponent {
 		let self = this;
 		self.ctrl_ren = self.getController("ctrl_ren");
 		self.img_wall = <fgui.GLoader>(self.getChild("img_wall"));
-		self.comp_mc = <UI_GameThreeMc>(self.getChild("comp_mc"));
+		self.comp_mc = <fgui.GComponent>(self.getChild("comp_mc"));
 		self.mc_temp = <fgui.GLoader>(self.getChild("mc_temp"));
 		self.t1 = self.getTransition("t1");
 		super.onConstruct();

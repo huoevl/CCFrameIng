@@ -15,5 +15,8 @@
     "cmd_prefab": "ts-node ./cmd/cmd_prefab.ts"
   },
   "uuid": "18655db9-d31c-47e6-ae58-ec6c53fde256",
-  "version": "3.6.2"
+  "version": "3.6.2",
+  "dependencies": {
+    "fairygui-cc": "^1.1.1"
+  }
 }

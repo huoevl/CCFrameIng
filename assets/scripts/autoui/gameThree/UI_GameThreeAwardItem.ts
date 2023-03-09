@@ -4,17 +4,17 @@
 import * as fgui from "fairygui-cc";
 export default class UI_GameThreeAwardItem extends fgui.GComponent {
 
-	public ctrl_state: fgui.Controller;
-	public label_txt: fgui.GTextField;
-	public img_item: fgui.GLoader;
-	public label_item: fgui.GTextField;
+	public ctrl_state:fgui.Controller;
+	public label_txt:fgui.GTextField;
+	public img_item:fgui.GLoader;
+	public label_item:fgui.GTextField;
 
-	public static URL: string = "ui://xtdgeoapvwyis";
-	public static PKG: string = "gameThree";
-	public static CLS_NAME: string = "UI_GameThreeAwardItem";
+	public static URL:string = "ui://xtdgeoapvwyis";
+	public static PKG:string = "gameThree";
+	public static CLS_NAME:string = "UI_GameThreeAwardItem";
 
-	public static createInstance(): UI_GameThreeAwardItem {
-		return <UI_GameThreeAwardItem>(fgui.UIPackage.createObject("gameThree", "GameThreeAwardItem"));
+	public static createInstance():UI_GameThreeAwardItem {
+		return <UI_GameThreeAwardItem>(fgui.UIPackage.createObject("gameThree","GameThreeAwardItem"));
 	}
 
 	protected onConstruct(): void {

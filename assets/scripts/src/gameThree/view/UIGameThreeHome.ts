@@ -4,9 +4,9 @@ import { UIUtils } from "../../../base/utils/UIUtils";
 
 export class UIGameThreeHome extends UI_GameThreeHome {
     onEnable() {
-        //console   
+        //console       
         this.btn_help.onClick(() => {
-            UIUtils.close(this);
+            UIUtils.close(this);  
         }, this)
     }
 }

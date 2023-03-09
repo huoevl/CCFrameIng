@@ -1,19 +1,12 @@
 {
   /* Base configuration. Do not edit this field. */
   "extends": "./temp/tsconfig.cocos.json",
-
   /* Add your custom configuration here. */
   "compilerOptions": {
     "strict": false,
     "suppressImplicitAnyIndexErrors": false,
     "noImplicitAny": false,
-    "isolatedModules": false,
-    // "allowSyntheticDefaultImports": true
-    "paths": {
-      // 注意：这里的相对路径是相对于 tsconfig.json 所在的路径
-      // 由于本例中 tsconfig.json 和 import-map.json 位于同一目录，因此这里的相对路径也相似。
-      "fairygui": ["./assets/libs/fairygui"],
-  }
+    // "isolatedModules": false,
+    "allowSyntheticDefaultImports": true
   },
-  
 }

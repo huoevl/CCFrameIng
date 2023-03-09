@@ -4,26 +4,26 @@
 import * as fgui from "fairygui-cc";
 export default class UI_GameThreeShare extends fgui.GComponent {
 
-	public ctrl_shareType: fgui.Controller;
-	public com_frame: fgui.GComponent;
-	public btn_back: fgui.GButton;
-	public comp_item: fgui.GComponent;
-	public label_itemDesc: fgui.GTextField;
-	public btn_use: fgui.GButton;
-	public label_shareDesc: fgui.GTextField;
-	public label_count: fgui.GTextField;
-	public btn_share: fgui.GButton;
-	public btn_movie: fgui.GButton;
-	public img_vip: fgui.GImage;
-	public btn_back1: fgui.GLoader;
-	public grp_back: fgui.GGroup;
+	public ctrl_shareType:fgui.Controller;
+	public com_frame:fgui.GComponent;
+	public btn_back:fgui.GButton;
+	public comp_item:fgui.GComponent;
+	public label_itemDesc:fgui.GTextField;
+	public btn_use:fgui.GButton;
+	public label_shareDesc:fgui.GTextField;
+	public label_count:fgui.GTextField;
+	public btn_share:fgui.GButton;
+	public btn_movie:fgui.GButton;
+	public img_vip:fgui.GImage;
+	public btn_back1:fgui.GLoader;
+	public grp_back:fgui.GGroup;
 
-	public static URL: string = "ui://xtdgeoapr7ab1i";
-	public static PKG: string = "gameThree";
-	public static CLS_NAME: string = "UI_GameThreeShare";
+	public static URL:string = "ui://xtdgeoapr7ab1i";
+	public static PKG:string = "gameThree";
+	public static CLS_NAME:string = "UI_GameThreeShare";
 
-	public static createInstance(): UI_GameThreeShare {
-		return <UI_GameThreeShare>(fgui.UIPackage.createObject("gameThree", "GameThreeShare"));
+	public static createInstance():UI_GameThreeShare {
+		return <UI_GameThreeShare>(fgui.UIPackage.createObject("gameThree","GameThreeShare"));
 	}
 
 	protected onConstruct(): void {
