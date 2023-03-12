@@ -27,6 +27,14 @@ const enum CSType {
     CS = "cs",
 }
 
+/** 字段类型 */
+const enum FiledTypes {
+    int = "int",
+    string = "string",
+    localstring = "localstring",
+    map = "map",//暂未实现
+}
+
 
 /** xlsx表格的开始行结束行，开始列结束列 */
 type TXlsxRange = {
@@ -85,7 +93,9 @@ export class CmdXlsx {
             itself.readXlsx(filePath);
         }
         //写入
-
+        for (let tabelName in itself.tabObj) {
+            fileUtils.outputJsonSync(_path.join(__dirname, "../", "xlsx", tabelName + ".json"), itself.tabObj[tabelName], { spaces: 4 });
+        }
     }
 
     /**
@@ -103,7 +113,7 @@ export class CmdXlsx {
             let sheetJson = data.Sheets[sheetNames[index]];
             itself.parseXlsxJson(sheetJson);
         }
-        fileUtils.outputJsonSync(_path.join(__dirname, "../", "xlsx", xlsxName + ".json"), data);
+        fileUtils.outputJsonSync(_path.join(__dirname, "../", "xlsx", xlsxName + "_xlsx.json"), data);
     }
 
     /**
@@ -118,24 +128,54 @@ export class CmdXlsx {
         }
         itself.calcHeadObj(data, range);
         let headObj = itself.headObj[itself.currXlsxName];
+        let tabObj = itself.tabObj[itself.currXlsxName] || (itself.tabObj[itself.currXlsxName] = {});
         let numToChar = itself.numToCharObj;
+        let idObj: { [id: string]: boolean } = {};
         for (let rowIndex = RowType.data; rowIndex <= range.rowE; rowIndex++) {
+            let tabRow = {};
             for (let useIndex = 0, len = headObj.useCols.length; useIndex < len; useIndex++) {
                 let colIndex = headObj.useCols[useIndex];
                 let colChar = numToChar[colIndex] || (numToChar[colIndex] = itself.getXlsxCharByCol(useIndex));
                 let xlsxValue = data[colChar + rowIndex] as _xlsx.CellObject;
                 let isValid = itself.isValid(xlsxValue);
-                if (!isValid && headObj.fileds[useIndex] == "id") {
+                let isId = headObj.fileds[useIndex] == "id";
+                if (!isValid && isId) {
                     break;//没有id，不取这行数据
                 }
-                if (isValid) {
+                if (!isValid) {
                     continue;
                 }
-                let value = xlsxValue.w.trim();
-
+                let type = headObj.filedTypes[useIndex];
+                let value = itself.getXlsxValue(xlsxValue.w.trim(), type);
+                if (isId) {
+                    if (idObj[value]) {
+                        logger.error(`第${rowIndex}行第${colIndex}（${colChar}）列id重复，已跳过此行`, itself.currXlsxName)
+                        continue;
+                    }
+                    idObj[value] = true;
+                    tabObj[value] = tabObj[value] || tabRow;
+                }
+                tabRow[headObj.fileds[useIndex]] = value;
             }
         }
     }
+    /**
+     * 计算获取正确的数据
+     * @param value 
+     * @param type 
+     * @returns 
+     */
+    private getXlsxValue(value: string, type: string) {
+        let itself = this;
+
+        return value;
+    }
+    /**
+     * 计算表头
+     * @param data xlsx数据
+     * @param range 范围
+     * @returns 
+     */
     private calcHeadObj(data: _xlsx.WorkSheet, range: TXlsxRange) {
         let itself = this;
         let colStart = itself.getXlsxColByChar(range.colS);
@@ -151,7 +191,7 @@ export class CmdXlsx {
             let colChar = numToChar[colIndex] || (numToChar[colIndex] = itself.getXlsxCharByCol(colIndex));
             let xlsxValue = data[colChar + range.rowS] as _xlsx.CellObject;
             if (!itself.isValid(xlsxValue)) {
-                logger.warn(`第一行第${colIndex}（${colChar}）列未配置C或S或者CS`, itself.currXlsxName);
+                logger.warn(`第1行第${colIndex}（${colChar}）列未配置C或S或者CS`, itself.currXlsxName);
                 continue;
             }
             let value = xlsxValue.w;
@@ -191,7 +231,6 @@ export class CmdXlsx {
                     case RowType.comment: {
                         if (!value) {
                             logger.warn(`第${rowIndex}行第${colIndex}（${colChar}）列注释为空`, itself.currXlsxName);
-                            process.exit()
                         }
                         headObj.comment.push(value)
                     } break;
