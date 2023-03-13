@@ -1,6 +1,7 @@
 
 import * as _fse from "fs-extra";
 import { logger } from "./Logger";
+import * as _jsonToLua from "json_to_lua";
 //继承模块
 export * from "fs-extra";
 
@@ -27,4 +28,15 @@ export function getDirList(src: string) {
         return _fse.readdirSync(src);
     }
     return [];
+}
+/**
+ * 把obj转lua写入文件
+ * @param src 文件路径
+ * @param jsonData obj数据
+ */
+export function outputJsonToLuaSync(src: string, jsonData: object) {
+    let content = _jsonToLua.jsObjectToLuaPretty(jsonData, 1);
+    content = `local t =${content}\nreturn t`;
+    content = content.replace(/"__nil__"/g, "nil");
+    _fse.outputFileSync(src, content);
 }
