@@ -2,20 +2,20 @@ import _path from "path";
 import _xlsx from "xlsx";
 import * as fileUtils from "../base/FileUtils";
 import { logger } from "../base/Logger";
-import { config_xlsx, TransType } from "../config/config_xlsx";
+import { configBase, TransType, ValueTransType } from "../config/config_xlsx";
 
 /** 前几行的类型 */
 const enum RowType {
     /** 客户端还是服务端：c,s */
     cOrs = 1,
-    /** 字段 */
-    field = 2,
-    /** 字段类型 */
-    filedType = 3,
     /** 字段注释 */
-    comment = 4,
+    comment,
+    /** 字段 */
+    field,
+    /** 字段类型 */
+    filedType,
     /** 数据开始行 */
-    data = 5,
+    data,
 }
 /** 客户端服务端类型 */
 const enum CSType {
@@ -38,10 +38,12 @@ const enum FiledTypes {
 
 /** xlsx类型对应真实类型数据 */
 type TXlsxTypeToReal = {
-    /** 类型 */
-    type?: string,
+    /** 基础类型，比如int string 没有[] */
+    baseType?: string,
     /** 数组长度 */
-    arrLen?: number
+    arrLen?: number,
+    /** 实际类型 比如int  int[] */
+    realType?: string,
 }
 /** 正在解析的表的数据 */
 type TXlsxParseIng = {
@@ -132,23 +134,23 @@ export class CmdXlsx {
         logger.info("正在解析", xlsxName, "...")
         let data = _xlsx.readFile(src);
         let sheetNames = data.SheetNames || [];
-        let sheetJson = data.Sheets[config_xlsx.languageMain];
+        let sheetJson = data.Sheets[configBase.languageMain];
         if (!sheetJson) {
-            itself.logErr(true, `没有名称为${config_xlsx.languageMain}的Sheet!`);
+            itself.logErr(true, `没有名称为${configBase.languageMain}的Sheet!`);
         }
         //除了类型提示，数据都会生成，只是不写入文件
-        if (config_xlsx.tansType & TransType.clientData || config_xlsx.tansType & TransType.severData) {
+        if (configBase.tansType & TransType.clientData || configBase.tansType & TransType.severData) {
             //主数据
             itself.parseXlsxJson(sheetJson);
             //多语言
             for (let index = 0, len = sheetNames.length; index < len; index++) {
-                if (sheetNames[index] == config_xlsx.languageMain) {
+                if (sheetNames[index] == configBase.languageMain) {
                     continue;
                 }
             }
         }
         //生成提示文件
-        if (config_xlsx.tansType & TransType.clientTs) {
+        if (configBase.tansType & TransType.clientTs) {
             itself.parseXlsxTs(sheetJson);
         }
         fileUtils.outputJsonSync(_path.join(__dirname, "../", "xlsx", xlsxName + "_xlsx.json"), data);
@@ -200,7 +202,16 @@ export class CmdXlsx {
                     continue;
                 }
                 let type = headObj.filedTypes[useIndex];
-                let value = itself.getXlsxValue(xlsxValue.w.trim(), type);
+                let value = null;
+                switch (configBase.valueTansType) {
+                    case ValueTransType.cust: {
+                        value = itself.getXlsxValueCust(xlsxValue.w.trim(), type);
+                    } break;
+                    default: {
+                        value = itself.getXlsxValueDefault(xlsxValue.w.trim(), type);
+                    } break
+                }
+
                 if (isId) {
                     if (idObj[value]) {
                         itself.logErr(false, `id重复：${value}，已跳过此行`)
@@ -213,30 +224,41 @@ export class CmdXlsx {
             }
         }
     }
+
     /**
-     * 计算获取正确的数据
-     * @param value 
+     * 计算获取正确的数据，自定义
+     * @param valueSource 
      * @param xlsxType 
      * @returns 
      */
-    private getXlsxValue(value: string, xlsxType: string): any {
+    private getXlsxValueCust(valueSource: string, xlsxType: string): any {
         let itself = this;
         let typeObj = itself.tempXlsxFiledType[xlsxType];
         if (!typeObj) {
             xlsxType = itself.getReallyType(xlsxType);
             let obj = {} as TXlsxTypeToReal;
-            obj.type = xlsxType.match(/[a-zA-Z]+/)[0];
+            obj.baseType = xlsxType.match(/[a-zA-Z]+/)[0];
             obj.arrLen = xlsxType.match(/\[\]/g)?.length || 0;
             typeObj = itself.tempXlsxFiledType[xlsxType] = obj;
         }
+        let logErr = function () {
+            itself.logErr(true, `数值【${valueSource}】与类型【${typeObj.realType}】不匹配`);
+        }
         let parseResult = function (value: string, type: string, arrLen: number) {
-            let result: string | number = value;
+            let result: string | number | any = value;
             if (arrLen <= 0) {
                 switch (type) {
-                    case `number`: {
+                    case "number": {
                         result = +value;
                         if (isNaN(result)) {
-                            itself.logErr(true, `数值【${value}】与类型【${type}】不匹配`);
+                            logErr();
+                        }
+                    } break;
+                    case "any": {
+                        try {
+                            result = JSON.parse(value);
+                        } catch (error) {
+                            logErr();
                         }
                     } break;
                 }
@@ -258,9 +280,110 @@ export class CmdXlsx {
                 }
                 return arr;
             }
+            if (tempLen == 3) {
+                let valueArr = value.split(":");
+                for (let index = 0, len = valueArr.length; index < len; index++) {
+                    arr.push(parseResult(valueArr[index], type, arrLen));
+                }
+                return arr;
+            }
         }
-        return parseResult(value, typeObj.type, typeObj.arrLen);
+        return parseResult(valueSource, typeObj.baseType, typeObj.arrLen);
     }
+    /**
+     * 计算获取正确的数据，原始数据
+     * @param value 
+     * @param xlsxType 
+     */
+    private getXlsxValueDefault(valueSource: string, xlsxType: string): any {
+        let itself = this;
+        let typeObj = itself.tempXlsxFiledType[xlsxType];
+        if (!typeObj) {
+            xlsxType = itself.getReallyType(xlsxType);
+            let obj = {} as TXlsxTypeToReal;
+            obj.baseType = xlsxType.match(/[a-zA-Z]+/)[0];
+            obj.arrLen = xlsxType.match(/\[\]/g)?.length || 0;
+            obj.realType = xlsxType;
+            typeObj = itself.tempXlsxFiledType[xlsxType] = obj;
+        }
+        let logErr = function () {
+            itself.logErr(true, `数值【${valueSource}】与类型【${typeObj.realType}】不匹配`);
+        }
+        let parseResult = function (value: string, type: string, arrLen: number) {
+            let result: string | number | any = value;
+            if (arrLen <= 0) {
+                switch (type) {
+                    case "number": {
+                        result = +value;
+                        if (isNaN(result)) {
+                            logErr();
+                        }
+                    } break;
+                    case "any": {//obj对象 {key:v,key:v};
+                        try {
+                            result = JSON.parse(value);
+                        } catch (error) {
+                            logErr();
+                        }
+                    } break
+                }
+                return result;
+            }
+            let tempLen = arrLen--;
+            let isMatch = itself.isMatchArr(value, tempLen);
+            if (!isMatch) {
+                logErr();
+            }
+            let arr = [];
+            let tempArr = itself.getArrStrValue(value, tempLen);
+            for (let index = 0, len = tempArr.length; index < len; index++) {
+                arr.push(parseResult(tempArr[index], type, arrLen));
+            }
+            if (!arr.length) {
+                itself.logWarn("存在空的数组");
+            }
+            return arr;
+        }
+        return parseResult(valueSource, typeObj.baseType, typeObj.arrLen);
+    }
+
+    /**
+     * 获取要拆分的值的数组
+     * @param value 
+     * @param arrLen 
+     */
+    private getArrStrValue(value: string, arrLen: number) {
+        value = value.slice(1, value.length - 1);//去掉两边的[]
+        let splitStr = ",";
+        let addRight = "";
+        for (let index = 0; index < arrLen - 1; index++) {
+            splitStr = "]" + splitStr;
+            addRight += "]";
+        }
+        let result = value.split(splitStr).join(addRight + ":").split(":");
+        return result;
+    }
+    /**
+     * 判断数组值是否正确
+     * @param value [x,x]  [[x,x],[x,x]]  [[[x,x],[x,x]],[[x,x],[x,x]]]
+     * @param charType 
+     */
+    private isMatchArr(value: string, len: number) {
+        if (len <= 0) {
+            return false;
+        }
+        let strS = "";
+        let strE = "";
+        for (let index = 0; index < len; index++) {
+            strS += "\\[";
+            strE += "\\]";
+        }
+        let regS = new RegExp(`^${strS}`);
+        let regE = new RegExp(`${strE}$`);
+        let result = value.match(regS) && value.match(regE);
+        return !!result;
+    }
+
 
     /**
      * 获取ts可用的（真实的）类型
@@ -270,15 +393,13 @@ export class CmdXlsx {
      */
     getReallyType(filedType: string, isComment?: boolean) {
         let [result, filed, array] = filedType.match(/([a-zA-Z]+)(\S*)/);
-        let arrLen = 0;
-        if (array == "[]") {
-            arrLen = 1;
-        } else if (array == "[][]") {
-            arrLen = 2;
-        }
+        let arrLen = (array || "").match(/\[\]+?/g)?.length || 0;
         switch (filed) {
             case FiledTypes.int: {
                 filed = filed.replace(filed, "number");
+            } break;
+            case FiledTypes.map: {
+                filed = filed.replace(filed, "any");
             } break;
             case FiledTypes.string:
             case FiledTypes.localstring: {
@@ -330,10 +451,10 @@ export class CmdXlsx {
                 continue;
             }
             let value = xlsxValue.w.trim().toLowerCase();
-            if (config_xlsx.tansType & TransType.clientData && value.match(CSType.Client)) {
+            if (configBase.tansType & TransType.clientData && value.match(CSType.Client)) {
                 headObj.useCols.push(colIndex);
             }
-            if (config_xlsx.tansType & TransType.severData && value.match(CSType.Sever)) {
+            if (configBase.tansType & TransType.severData && value.match(CSType.Sever)) {
                 headObj.useCols.push(colIndex);
             }
         }
@@ -361,10 +482,10 @@ export class CmdXlsx {
                             itself.logErr(true, `未配置字段类型`);
                         }
                         let [result, filed, array] = value.match(/([a-zA-Z]+)(\S*)/);
-                        if (array && array != "[]" && array != "[][]") {
+                        if (array && array != "[]" && array != "[][]" && array != "[][][]") {
                             itself.logErr(true, `数据类型配置错误：${value}`);
                         }
-                        if (filed != FiledTypes.int && filed != FiledTypes.string && filed != FiledTypes.localstring) {
+                        if (filed != FiledTypes.int && filed != FiledTypes.string && filed != FiledTypes.localstring && filed != FiledTypes.map) {
                             itself.logErr(true, `数据类型配置错误：${value}`);
                         }
                         headObj.filedTypes.push(value)
