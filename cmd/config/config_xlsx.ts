@@ -14,12 +14,28 @@ export const configBase = {
     /** 多语言页切 ["zhGT","kr"] */
     language: [],
     /** 转表类型：看TransType */
-    tansType: TransType.clientData,
+    tansType: TransType.AllTest,
     /** 数值转换类型 */
     valueTansType: ValueTransType.source,
 
-    //客户端相关
+    /** xlsx表格路径 */
+    xlsxPath: "../xlsx",
+    /** lua输出路径 */
+    luaPath: "../auto/lua",
+    /** json输出路径 */
+    jsonPath: "../auto/json",
 
+    //客户端相关
+    /** CfgNameInfo1输出路径 */
+    cfgNameInfo1Path: "../auto",
+    /** InitConfig输出路径 */
+    initConfigPath: "../auto",
+    /** GlobalCOnfig输出路径 */
+    globalConfigPath: "../auto",
+    /** vo输出路径 */
+    voPath: "../auto/config/vo",
+    /** config类输出路径 */
+    configClassPath: "../auto/config/clazz",
 }
 
 export const enum ValueTransType {
@@ -40,9 +56,9 @@ export const enum ValueTransType {
 /** 转表类型*/
 export const enum TransType {
     //以下做互斥类型辨别 2的n次方
-    /** 客户端数据 */
+    /** 客户端json数据 */
     clientData = 1,
-    /** 服务端数据 */
+    /** 服务端lua数据 */
     severData = 2,
     /** 客户端提示ts文件 */
     clientTs = 4,
@@ -52,4 +68,22 @@ export const enum TransType {
     csData = 3,
     /** 客户端数据+提示文件 */
     clientAll = 5,
+    /** 全部 */
+    AllTest = 7,
+}
+
+/** 前几行的类型 */
+export const enum RowType {
+    /** 客户端还是服务端：c,s */
+    cOrs = 1,
+    /** 字段注释 */
+    comment = 2,
+    /** 字段 */
+    field = 3,
+    /** 字段类型 */
+    fieldType = 4,
+    /** lua数组自定义字段行，有这个功能就填对应的行，没有填0 */
+    luaArr = 5,
+    /** 数据开始行 */
+    data = 6,
 }

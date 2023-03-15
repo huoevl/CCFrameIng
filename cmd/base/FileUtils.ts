@@ -2,6 +2,7 @@
 import * as _fse from "fs-extra";
 import { logger } from "./Logger";
 import * as _jsonToLua from "json_to_lua";
+import * as _path from "path";
 //继承模块
 export * from "fs-extra";
 
@@ -38,5 +39,45 @@ export function outputJsonToLuaSync(src: string, jsonData: object) {
     let content = _jsonToLua.jsObjectToLuaPretty(jsonData, 1);
     content = `local t =${content}\nreturn t`;
     content = content.replace(/"__nil__"/g, "nil");
+    content = content.replace(/"\""/g, "\\\"")
     _fse.outputFileSync(src, content);
+}
+
+/**
+ * 规范化路径  //https://github.com/soates/Auto-Import/blob/v1.5.3/src/helpers/path-helper.ts
+ * @param relativePath 相对路径
+ * @returns 
+ */
+export function normalisePath(relativePath: string) {
+    /** 删除扩展 */
+    let removeFileExtenion = (rp: string) => {
+        if (rp) {
+            rp = rp.substring(0, rp.lastIndexOf('.'))
+        }
+        return rp;
+    }
+    /** 生成相对路径 */
+    let makeRelativePath = (rp: string) => {
+        let preAppend = './';
+        if (!rp.startsWith(preAppend) && !rp.startsWith('../')) {
+            rp = preAppend + rp;
+        }
+        if (/^win/.test(process.platform)) {
+            rp = rp.replace(/\\/g, '/');
+        }
+        return rp;
+    }
+    relativePath = makeRelativePath(relativePath);
+    relativePath = removeFileExtenion(relativePath);
+    return relativePath;
+}
+/**
+ * 获取相对路径 //https://github.com/soates/Auto-Import/blob/v1.5.3/src/helpers/path-helper.ts
+ * @param currPath 当前路径
+ * @param importPath 需要导入的路径
+ * @returns 
+ */
+export function getRelativePath(currPath: string, importPath: string): string {
+    let dir = _path.relative(_path.dirname(currPath), importPath);
+    return normalisePath(dir);
 }

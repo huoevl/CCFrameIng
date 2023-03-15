@@ -2,21 +2,9 @@ import _path from "path";
 import _xlsx from "xlsx";
 import * as fileUtils from "../base/FileUtils";
 import { logger } from "../base/Logger";
-import { configBase, TransType, ValueTransType } from "../config/config_xlsx";
+import { configBase, RowType, TransType, ValueTransType } from "../config/config_xlsx";
 
-/** 前几行的类型 */
-const enum RowType {
-    /** 客户端还是服务端：c,s */
-    cOrs = 1,
-    /** 字段注释 */
-    comment,
-    /** 字段 */
-    field,
-    /** 字段类型 */
-    filedType,
-    /** 数据开始行 */
-    data,
-}
+
 /** 客户端服务端类型 */
 const enum CSType {
     /** 仅客户端 */
@@ -28,13 +16,12 @@ const enum CSType {
 }
 
 /** 字段类型 */
-const enum FiledTypes {
+const enum FieldTypes {
     int = "int",
     string = "string",
     localstring = "localstring",//需要处理多语言的字符串
-    map = "map",//暂未实现
+    map = "map",
 }
-
 
 /** xlsx类型对应真实类型数据 */
 type TXlsxTypeToReal = {
@@ -44,13 +31,16 @@ type TXlsxTypeToReal = {
     arrLen?: number,
     /** 实际类型 比如int  int[] */
     realType?: string,
+    /** ts提示的类型 */
+    realTsType?: string,
 }
 /** 正在解析的表的数据 */
 type TXlsxParseIng = {
-    name?: string;
-    row?: number,
-    col?: number,
-    colChar?: string,
+    comment?: string;//表中文名
+    name?: string;//表英文名
+    row?: number;
+    col?: number;
+    colChar?: string;//列对应的英文
 }
 /** xlsx表格的开始行结束行，开始列结束列 */
 type TXlsxRange = {
@@ -64,28 +54,40 @@ type TTabHead = {
     /** 使用到的列，根据cs判断 */
     useCols?: number[];
     /** 字段名 */
-    fileds?: string[];
+    fields?: string[];
     /** 字段类型 */
-    filedTypes?: string[];
+    xlsxTypes?: string[];
     /** 注释 */
     comment?: string[];
+    /** lua数组字段 */
+    luaFields?: string[];
 }
-/** 表数据 */
-type TTabData = {
+/** 字段 */
+type TFields = {
     /** 注释 */
     comment?: string;
-    /** 字段 */
-    filed?: string;
-
+    /** 类型 */
+    type?: string;
+    /** 字段名 */
+    field?: string;
+}
+/** 表数据 */
+type TTabToTs = {
+    /** 表名 */
+    tabName?: string
+    /** 表注释 */
+    tabComment?: string;
+    /** 字段集  */
+    fieldObj?: { [field: string]: TFields };
 }
 
 export class CmdXlsx {
     /** 表json数据，客户端 */
     tabJsonObj: { [tabName: string]: Object } = {};
     /** lua数据，服务端 */
-    tabLuaObj = {};
+    tabLuaObj: { [tabName: string]: Object } = {};
     /** 转ts代码数据 */
-    tabToTsObj: { [tabName: string]: TTabData } = {};
+    tabToTsObj: { [tabName: string]: TTabToTs } = {};
 
     /** 表头几行数据 */
     headObj: { [tabName: string]: TTabHead } = {};
@@ -95,12 +97,24 @@ export class CmdXlsx {
     /** 缓存xlsx列计算过的转换数据 */
     tempNumToCharObj: { [num: number]: string } = {};
     /** 缓存xlsx填写类型对应的是实际类型 */
-    tempXlsxFiledType: { [type: string]: TXlsxTypeToReal } = {}
+    tempXlsxFieldType: { [type: string]: TXlsxTypeToReal } = {};
+    /** 缓存解析过的表名 */
+    tempXlsxName: { [name: string]: boolean } = {};
+
+    /** 是否生成客户端数据 */
+    isClient = false;
+    /** 是否生成服务端数据 */
+    isServer = false;
+    /** 是否生成ts提示文件 */
+    isTsComment = false;
     /** 执行函数 */
     exec() {
         let itself = this;
-        let bastPath = _path.join(__dirname, "../");
-        let dir = _path.join(bastPath, "xlsx");
+        itself.isClient = Boolean(configBase.tansType & TransType.clientData);
+        itself.isServer = Boolean(configBase.tansType & TransType.severData);
+        itself.isTsComment = Boolean(configBase.tansType & TransType.clientTs);
+
+        let dir = _path.join(__dirname, configBase.xlsxPath);
         let dirlist = fileUtils.getDirList(dir);
         logger.info(dirlist)
         for (let index = 0, len = dirlist.length; index < len; index++) {
@@ -115,10 +129,74 @@ export class CmdXlsx {
             let filePath = _path.join(dir, dirlist[index]);
             itself.readXlsx(filePath);
         }
+        itself.writeToFile();
+    }
+
+    /** 写入文件 */
+    private writeToFile() {
+        let itself = this;
         //写入
         for (let tabelName in itself.tabJsonObj) {
-            fileUtils.outputJsonSync(_path.join(__dirname, "../", "xlsx", tabelName + ".json"), itself.tabJsonObj[tabelName], { spaces: 4 });
-            fileUtils.outputJsonToLuaSync(_path.join(__dirname, "../", "xlsx", tabelName + ".lua"), itself.tabJsonObj[tabelName]);
+            if (itself.isClient) {
+                fileUtils.outputJsonSync(_path.join(__dirname, configBase.jsonPath, tabelName + ".json"), itself.tabJsonObj[tabelName], { spaces: 4 });
+            }
+            if (itself.isServer) {
+                fileUtils.outputJsonToLuaSync(_path.join(__dirname, configBase.luaPath, tabelName + ".lua"), itself.tabLuaObj[tabelName]);
+            }
+        }
+        if (itself.isTsComment) {
+            let cfgNameInfo1Str = "/**\n* 配置名称相关常量（程序自动生成）\n*/\nexport class CfgNameInfo1 {\n";
+            let initConfigStr = "";
+            let initConfigStr2 = "export class InitConfig {\n\tpublic constructor() {\n";
+            let globalConfigStr = "";
+            let globalConfigStr2 = "export class CONFIG {\n";
+
+            let cfgNameInfo1Path = _path.join(__dirname, configBase.initConfigPath, "CfgNameInfo1.ts");
+            let initConfigPath = _path.join(__dirname, configBase.initConfigPath, "InitConfig.ts");
+            let globalConfigPath = _path.join(__dirname, configBase.globalConfigPath, "GlobalConfig.ts");
+
+            for (let tabelName in itself.tabToTsObj) {
+                let tabTsData = itself.tabToTsObj[tabelName];
+                //cfgNameInfo1
+                cfgNameInfo1Str += `\t/** ${tabTsData.tabComment} */\n\t${tabelName} = "${tabelName}";\n`;
+                //initConfig
+                let fromPath = _path.join(__dirname, configBase.configClassPath, tabelName + ".ts");
+                let relativePath = fileUtils.getRelativePath(initConfigPath, fromPath);
+                initConfigStr += `import { ${tabelName} } from "${relativePath}";\n`;
+                initConfigStr2 += `\t\tGAME.CfgMgr.register(CfgConst.CfgName.${tabelName}, ${tabelName});\n`;
+                //globalConfig
+                fromPath = _path.join(__dirname, configBase.configClassPath, tabelName + ".ts");
+                relativePath = fileUtils.getRelativePath(globalConfigPath, fromPath);
+                globalConfigStr += `import { ${tabelName} } from "${relativePath}";\n`;
+                globalConfigStr2 += `\t/** ${tabTsData.tabComment} */\n\tpublic static get ${tabelName}(): ${tabelName} {\n\treturn GAME.CfgMgr.getConfig<${tabelName}>(CfgConst.CfgName.${tabelName});\n\t}\n`;
+                //VO
+                let voName = tabelName.match("config") ? tabelName.replace("config", "VO") : tabelName + "VO";
+                let clazzVoStr = `/**\n* ${tabTsData.tabComment}\n*/\nexport class ${voName} {\n`;
+                let fieldObj = tabTsData.fieldObj || {};
+                for (let field in fieldObj) {
+                    let fieldData = fieldObj[field];
+                    clazzVoStr += `\t/** ${fieldData.comment} */\n\treadonly ${field}: ${fieldData.type};\n`;
+                }
+                clazzVoStr += "}";
+                fileUtils.outputFileSync(_path.join(__dirname, configBase.voPath, `${voName}.ts`), clazzVoStr);
+                //class
+                let classPath = _path.join(__dirname, configBase.configClassPath, tabelName + ".ts");
+                if (!fileUtils.existsSync(classPath)) {
+                    fromPath = _path.join(__dirname, configBase.voPath, voName + ".ts");
+                    relativePath = fileUtils.getRelativePath(classPath, fromPath);
+                    let classStr = `import { ${voName} } from "${relativePath}";\n`;
+                    classStr += `/**\n* ${tabTsData.tabComment} 相关配置\n*/\n`;
+                    classStr += `export class ${tabelName} extends BaseConfig<${voName}>{\n};`;
+                    fileUtils.outputFileSync(classPath, classStr);
+                }
+            }
+            cfgNameInfo1Str += "}";
+            initConfigStr2 += `\t}\n`;
+            initConfigStr += initConfigStr2 + "}";
+            globalConfigStr += globalConfigStr2 + "}";
+            fileUtils.outputFileSync(cfgNameInfo1Path, cfgNameInfo1Str);
+            fileUtils.outputFileSync(initConfigPath, initConfigStr);
+            fileUtils.outputFileSync(globalConfigPath, globalConfigStr);
         }
     }
 
@@ -129,8 +207,14 @@ export class CmdXlsx {
     private readXlsx(src: string) {
         let itself = this;
         let xlsxName = itself.getXlsxName(src);
+        if (itself.tempXlsxName[xlsxName]) {
+            itself.logErr(true, "表名重复")
+        }
+        itself.tempXlsxName[xlsxName] = true;
         itself.currXlsxObj = {};
         itself.currXlsxObj.name = xlsxName;
+        let fileName = _path.basename(src).replace(".xlsx", "");
+        itself.currXlsxObj.comment = fileName.slice(xlsxName.length);
         logger.info("正在解析", xlsxName, "...")
         let data = _xlsx.readFile(src);
         let sheetNames = data.SheetNames || [];
@@ -139,7 +223,7 @@ export class CmdXlsx {
             itself.logErr(true, `没有名称为${configBase.languageMain}的Sheet!`);
         }
         //除了类型提示，数据都会生成，只是不写入文件
-        if (configBase.tansType & TransType.clientData || configBase.tansType & TransType.severData) {
+        if (itself.isClient || itself.isServer) {
             //主数据
             itself.parseXlsxJson(sheetJson);
             //多语言
@@ -147,15 +231,21 @@ export class CmdXlsx {
                 if (sheetNames[index] == configBase.languageMain) {
                     continue;
                 }
+                //todo
             }
         }
         //生成提示文件
-        if (configBase.tansType & TransType.clientTs) {
+        if (itself.isTsComment) {
             itself.parseXlsxTs(sheetJson);
         }
         fileUtils.outputJsonSync(_path.join(__dirname, "../", "xlsx", xlsxName + "_xlsx.json"), data);
     }
 
+    /**
+     * 生成ts提示文件
+     * @param data 
+     * @returns 
+     */
     private parseXlsxTs(data: _xlsx.WorkSheet) {
         let itself = this;
         let range = itself.getRange(data);//todo 
@@ -165,9 +255,17 @@ export class CmdXlsx {
         itself.calcHeadObj(data, range);
         let xlsxName = itself.currXlsxObj.name;
         let headObj = itself.headObj[xlsxName];
-        let tabObj = itself.tabJsonObj[xlsxName] || (itself.tabJsonObj[xlsxName] = {});
-        let numToChar = itself.tempNumToCharObj;
-        let idObj: { [id: string]: boolean } = {};
+        let tabTsObj = itself.tabToTsObj[xlsxName] = {} as TTabToTs;
+        tabTsObj.tabComment = itself.currXlsxObj.comment;
+        tabTsObj.tabName = xlsxName;
+        let fieldObj = tabTsObj.fieldObj = {} as { [field: string]: TFields };
+        for (let useIndex = 0, len = headObj.useCols.length; useIndex < len; useIndex++) {
+            let field = headObj.fields[useIndex];
+            let obj = fieldObj[field] = fieldObj[field] || {};
+            obj.comment = headObj.comment[useIndex];
+            obj.field = field;
+            obj.type = itself.getReallyType(headObj.xlsxTypes[useIndex]).realTsType;
+        }
     }
     /**
      * 解析xlsx的sheet数据，定义看配置：config_xlsx.ts
@@ -182,10 +280,12 @@ export class CmdXlsx {
         itself.calcHeadObj(data, range);
         let xlsxName = itself.currXlsxObj.name;
         let headObj = itself.headObj[xlsxName];
-        let tabObj = itself.tabJsonObj[xlsxName] || (itself.tabJsonObj[xlsxName] = {});
+        let tabObj = itself.tabJsonObj[xlsxName] = {};
+        let luaObj = itself.tabLuaObj[xlsxName] = {};
         let idObj: { [id: string]: boolean } = {};
         for (let rowIndex = RowType.data; rowIndex <= range.rowE; rowIndex++) {
             let tabRowObj = {};
+            let luaRowObj = {};
             itself.currXlsxObj.row = rowIndex;
             for (let useIndex = 0, len = headObj.useCols.length; useIndex < len; useIndex++) {
                 let colIndex = headObj.useCols[useIndex];
@@ -194,24 +294,23 @@ export class CmdXlsx {
                 itself.currXlsxObj.colChar = colChar;
                 let xlsxValue = data[colChar + rowIndex] as _xlsx.CellObject;
                 let isValid = itself.isValid(xlsxValue);
-                let isId = headObj.fileds[useIndex] == "id";
+                let isId = headObj.fields[useIndex] == "id";
                 if (!isValid && isId) {
                     break;//没有id，不取这行数据
                 }
                 if (!isValid) {
                     continue;
                 }
-                let type = headObj.filedTypes[useIndex];
+                let xlsxType = headObj.xlsxTypes[useIndex];
                 let value = null;
                 switch (configBase.valueTansType) {
                     case ValueTransType.cust: {
-                        value = itself.getXlsxValueCust(xlsxValue.w.trim(), type);
+                        value = itself.getXlsxValueCust(xlsxValue.w.trim(), xlsxType);
                     } break;
                     default: {
-                        value = itself.getXlsxValueDefault(xlsxValue.w.trim(), type);
+                        value = itself.getXlsxValueDefault(xlsxValue.w.trim(), xlsxType);
                     } break
                 }
-
                 if (isId) {
                     if (idObj[value]) {
                         itself.logErr(false, `id重复：${value}，已跳过此行`)
@@ -219,8 +318,14 @@ export class CmdXlsx {
                     }
                     idObj[value] = true;
                     tabObj[value] = tabObj[value] || tabRowObj;
+                    luaObj[value] = luaObj[value] || luaRowObj;
                 }
-                tabRowObj[headObj.fileds[useIndex]] = value;
+                if (itself.isServer) {
+                    let luaField = headObj.luaFields[useIndex];
+                    let luaValue = itself.getLuaValue(value, luaField, xlsxType);
+                    luaRowObj[headObj.fields[useIndex]] = luaValue;
+                }
+                tabRowObj[headObj.fields[useIndex]] = value;
             }
         }
     }
@@ -233,14 +338,7 @@ export class CmdXlsx {
      */
     private getXlsxValueCust(valueSource: string, xlsxType: string): any {
         let itself = this;
-        let typeObj = itself.tempXlsxFiledType[xlsxType];
-        if (!typeObj) {
-            xlsxType = itself.getReallyType(xlsxType);
-            let obj = {} as TXlsxTypeToReal;
-            obj.baseType = xlsxType.match(/[a-zA-Z]+/)[0];
-            obj.arrLen = xlsxType.match(/\[\]/g)?.length || 0;
-            typeObj = itself.tempXlsxFiledType[xlsxType] = obj;
-        }
+        let typeObj = itself.getReallyType(xlsxType);
         let logErr = function () {
             itself.logErr(true, `数值【${valueSource}】与类型【${typeObj.realType}】不匹配`);
         }
@@ -297,15 +395,7 @@ export class CmdXlsx {
      */
     private getXlsxValueDefault(valueSource: string, xlsxType: string): any {
         let itself = this;
-        let typeObj = itself.tempXlsxFiledType[xlsxType];
-        if (!typeObj) {
-            xlsxType = itself.getReallyType(xlsxType);
-            let obj = {} as TXlsxTypeToReal;
-            obj.baseType = xlsxType.match(/[a-zA-Z]+/)[0];
-            obj.arrLen = xlsxType.match(/\[\]/g)?.length || 0;
-            obj.realType = xlsxType;
-            typeObj = itself.tempXlsxFiledType[xlsxType] = obj;
-        }
+        let typeObj = itself.getReallyType(xlsxType);
         let logErr = function () {
             itself.logErr(true, `数值【${valueSource}】与类型【${typeObj.realType}】不匹配`);
         }
@@ -347,6 +437,63 @@ export class CmdXlsx {
         return parseResult(valueSource, typeObj.baseType, typeObj.arrLen);
     }
 
+    private getLuaValue(realValue: any, fields: string, xlsxType: string) {
+        let itself = this;
+        if (!fields) {
+            return realValue;
+        }
+        if (realValue === "" || realValue === undefined || realValue === null) {
+            return "__nil__";
+        }
+        if (realValue.constructor != Array) {
+            return realValue;
+        }
+        if (!realValue.length) {
+            return realValue;
+        }
+        let typeMap = itself.getReallyType(xlsxType);
+        if (typeMap.arrLen < 1) {
+            itself.logErr(false, "不应该不是数组，请检查");
+            return realValue;
+        }
+        let value: any;
+        if (fields == "attr") {//属性[id,value] 转成 {id,value}
+            if (typeMap.arrLen == 1) {
+                realValue = [realValue];
+            }
+            value = {};
+            for (let index = 0, len = realValue.length; index < len; index++) {
+                let attrArr = realValue[index];
+                if (attrArr[2]) {
+                    itself.logErr(false, "属性值配置数量错误");
+                }
+                value[attrArr[0]] = attrArr[1];
+            }
+        } else {
+            let fieldLuas = fields.replace(/ *, */, ",").split(",");
+            let parseLua = function (valueArr: any[]) {
+                if (valueArr[0].constructor != Array) {
+                    if (fieldLuas.length < valueArr.length) {
+                        itself.logErr(true, "解析lua字段数量小于配置数量")
+                    }
+                    let luaOjbTemp = {};
+                    for (let index = 0, len = valueArr.length; index < len; index++) {
+                        luaOjbTemp[fieldLuas[index]] = valueArr[index];
+                    }
+                    return luaOjbTemp;
+                } else {
+                    let obj = [];
+                    for (let index = 0, len = valueArr.length; index < len; index++) {
+                        obj.push(parseLua(valueArr[index]));
+                    }
+                    return obj;
+                }
+            }
+            value = parseLua(realValue);
+        }
+        return value;
+    }
+
     /**
      * 获取要拆分的值的数组
      * @param value 
@@ -360,7 +507,7 @@ export class CmdXlsx {
             splitStr = "]" + splitStr;
             addRight += "]";
         }
-        let result = value.split(splitStr).join(addRight + ":").split(":");
+        let result = value.replace(/\] *, */g, "\],").split(splitStr).join(addRight + ":").split(":");
         return result;
     }
     /**
@@ -384,43 +531,50 @@ export class CmdXlsx {
         return !!result;
     }
 
-
     /**
-     * 获取ts可用的（真实的）类型
-     * @param filedType 表格填的类型
+     * 获取xlsxtype对应的真实type、数组类型的长度
+     * @param xlsxType 表格填的类型
      * @param isComment 是否ts注释
      * @returns 
      */
-    getReallyType(filedType: string, isComment?: boolean) {
-        let [result, filed, array] = filedType.match(/([a-zA-Z]+)(\S*)/);
+    getReallyType(xlsxType: string) {
+        let itself = this;
+        if (itself.tempXlsxFieldType[xlsxType]) {
+            return itself.tempXlsxFieldType[xlsxType];
+        }
+        let [result, field, array] = xlsxType.match(/([a-zA-Z]+)(\S*)/);
         let arrLen = (array || "").match(/\[\]+?/g)?.length || 0;
-        switch (filed) {
-            case FiledTypes.int: {
-                filed = filed.replace(filed, "number");
+        switch (field) {
+            case FieldTypes.int: {
+                field = field.replace(field, "number");
             } break;
-            case FiledTypes.map: {
-                filed = filed.replace(filed, "any");
+            case FieldTypes.map: {
+                field = field.replace(field, "any");
             } break;
-            case FiledTypes.string:
-            case FiledTypes.localstring: {
-                filed = filed.replace(filed, "string");
+            case FieldTypes.string:
+            case FieldTypes.localstring: {
+                field = field.replace(field, "string");
             } break;
             default: {
-
+                itself.logErr(true, "不存在的类型")
             } break
         }
+        let obj = {} as TXlsxTypeToReal;
+        let realType = field + array;
+        obj.baseType = realType.match(/[a-zA-Z]+/)[0];
+        obj.arrLen = realType.match(/\[\]/g)?.length || 0;
+        obj.realType = realType;
         //注释加上readonly防止被改数据
-        if (!isComment) {
-            return filed + array;
-        }
-        let readonly = function (filed: string, arrLen: number): string {
+        let readonly = function (field: string, arrLen: number): string {
             if (arrLen <= 0) {
-                return filed;
+                return field;
             }
-            return `Readonly<${readonly(filed, --arrLen)}[]>`
+            return `Readonly<${readonly(field, --arrLen)}[]>`
         }
-        filedType = readonly(filed, arrLen);
-        return filedType;
+        let tsType = readonly(field, arrLen);
+        obj.realTsType = tsType;
+        itself.tempXlsxFieldType[xlsxType] = obj;
+        return obj;
     }
 
     /**
@@ -435,12 +589,16 @@ export class CmdXlsx {
         let colEnd = itself.getXlsxColByChar(range.colE);
         let xlsxName = itself.currXlsxObj.name;
         itself.currXlsxObj.row = range.rowS;
-        let headObj = itself.headObj[xlsxName] || (itself.headObj[xlsxName] = {});
+        if (itself.headObj[xlsxName]) {
+            return;
+        }
+        let headObj = itself.headObj[xlsxName] = {} as TTabHead;
 
         headObj.useCols = [];
         headObj.comment = [];
-        headObj.fileds = [];
-        headObj.filedTypes = [];
+        headObj.fields = [];
+        headObj.xlsxTypes = [];
+        headObj.luaFields = [];
         for (let colIndex = colStart; colIndex <= colEnd; colIndex++) {
             let colChar = itself.getXlsxCharByCol(colIndex);
             itself.currXlsxObj.col = colIndex;
@@ -451,10 +609,7 @@ export class CmdXlsx {
                 continue;
             }
             let value = xlsxValue.w.trim().toLowerCase();
-            if (configBase.tansType & TransType.clientData && value.match(CSType.Client)) {
-                headObj.useCols.push(colIndex);
-            }
-            if (configBase.tansType & TransType.severData && value.match(CSType.Sever)) {
+            if (itself.isClient && value.match(CSType.Client) || itself.isServer && value.match(CSType.Sever)) {
                 headObj.useCols.push(colIndex);
             }
         }
@@ -472,29 +627,32 @@ export class CmdXlsx {
                         if (!value) {
                             itself.logErr(true, `未配置字段名`);
                         }
-                        if (headObj.fileds.indexOf(value) >= 0) {
+                        if (headObj.fields.indexOf(value) >= 0) {
                             itself.logErr(true, `字段名重复：${value}`);
                         }
-                        headObj.fileds.push(xlsxValue.w);
+                        headObj.fields.push(xlsxValue.w);
                     } break;
-                    case RowType.filedType: {
+                    case RowType.fieldType: {
                         if (!value) {
                             itself.logErr(true, `未配置字段类型`);
                         }
-                        let [result, filed, array] = value.match(/([a-zA-Z]+)(\S*)/);
+                        let [result, field, array] = value.match(/([a-zA-Z]+)(\S*)/);
                         if (array && array != "[]" && array != "[][]" && array != "[][][]") {
                             itself.logErr(true, `数据类型配置错误：${value}`);
                         }
-                        if (filed != FiledTypes.int && filed != FiledTypes.string && filed != FiledTypes.localstring && filed != FiledTypes.map) {
+                        if (field != FieldTypes.int && field != FieldTypes.string && field != FieldTypes.localstring && field != FieldTypes.map) {
                             itself.logErr(true, `数据类型配置错误：${value}`);
                         }
-                        headObj.filedTypes.push(value)
+                        headObj.xlsxTypes.push(value)
                     } break;
                     case RowType.comment: {
                         if (!value) {
                             itself.logErr(false, `注释为空`);
                         }
                         headObj.comment.push(value)
+                    } break;
+                    case RowType.luaArr: {
+                        headObj.luaFields.push(value)
                     } break;
                     default: {
                         return;
