@@ -7,9 +7,9 @@ import { configBase, RowType, TransType, ValueTransType } from "../config/config
 
 /** 客户端服务端类型 */
 const enum CSType {
-    /** 仅客户端 */
+    /** 客户端 */
     Client = "c",
-    /** 仅服务端 */
+    /** 服务端 */
     Sever = "s",
     /** 两端 */
     CS = "cs",

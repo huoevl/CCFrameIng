@@ -38,6 +38,28 @@ export const configBase = {
     configClassPath: "../auto/config/clazz",
 }
 
+/** 前几行的类型 */
+export const enum RowType {
+    /** 客户端还是服务端：c,s */
+    cOrs = 1,
+    /** 字段注释 */
+    comment = 2,
+    /** 字段 */
+    field = 3,
+    /** 字段类型，以下为基础类型，数组后面加[]，几维数组就加几个：[]。
+     * int：数字,
+     * string：字符串,
+     * localstring：也是字符串，处理多语言，一般是中文需要
+     * map：对象类型：{key:value}，也可以是其他JSON.parse能解析的obj
+     * 
+     */
+    fieldType = 4,
+    /** lua数组自定义字段行，有这个功能就填对应的行，没有填0 */
+    luaArr = 5,
+    /** 数据开始行 */
+    data = 6,
+}
+
 export const enum ValueTransType {
     /** 原始数据：数据该是怎么样就怎么样
      * [1,2]或者[[1,2],[2,3]]
@@ -72,18 +94,3 @@ export const enum TransType {
     AllTest = 7,
 }
 
-/** 前几行的类型 */
-export const enum RowType {
-    /** 客户端还是服务端：c,s */
-    cOrs = 1,
-    /** 字段注释 */
-    comment = 2,
-    /** 字段 */
-    field = 3,
-    /** 字段类型 */
-    fieldType = 4,
-    /** lua数组自定义字段行，有这个功能就填对应的行，没有填0 */
-    luaArr = 5,
-    /** 数据开始行 */
-    data = 6,
-}
