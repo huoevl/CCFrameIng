@@ -649,7 +649,7 @@ export class CmdXlsx {
                 let xlsxValue = data[colChar + rowIndex] as _xlsx.CellObject;
                 let value = (xlsxValue?.w || "").trim().toLowerCase();
                 switch (rowIndex) {
-                    case RowType.field + add: {
+                    case RowType["field"] + add: {
                         if (!value) {
                             itself.logErr(true, `未配置字段名`);
                         }
@@ -658,7 +658,7 @@ export class CmdXlsx {
                         }
                         headObj.fields.push(xlsxValue.w);
                     } break;
-                    case RowType.fieldType + add: {
+                    case RowType["fieldType"] + add: {
                         if (!value) {
                             itself.logErr(true, `未配置字段类型`);
                         }
@@ -671,13 +671,13 @@ export class CmdXlsx {
                         }
                         headObj.xlsxTypes.push(value)
                     } break;
-                    case RowType.comment + add: {
+                    case RowType["comment"] + add: {
                         if (!value) {
                             itself.logErr(false, `注释为空`);
                         }
                         headObj.comment.push(value)
                     } break;
-                    case RowType.luaArr + add: {
+                    case RowType["luaArr"] + add: {
                         headObj.luaFields.push(value)
                     } break;
                     default: {

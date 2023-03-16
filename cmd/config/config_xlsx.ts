@@ -39,13 +39,13 @@ export const configBase = {
 }
 
 /** 前几行的类型，后面数字代表行数 */
-export const enum RowType {
-    /** 客户端还是服务端：c,s */
-    cOrs = 1,
-    /** 字段注释 */
-    comment = 2,
-    /** 字段 */
-    field = 3,
+export enum RowType {
+    /** 客户端还是服务端：c,s,cs。不知道就全配cs。必配，用来遍历列数 */
+    COrS = 1,
+    /** 注释说明 */
+    comment,
+    /** 字段名 */
+    field,
     /** 字段类型，以下为基础类型，数组后面加[]，几维数组就加几个：[]。
      * int：整数（lua不支持小数混合）,
      * float：小数
@@ -54,11 +54,11 @@ export const enum RowType {
      * map：对象类型：{key:value}，也可以是其他JSON.parse能解析的obj
      * 
      */
-    fieldType = 4,
+    fieldType,
     /** lua数组自定义字段行，有这个功能就填对应的行，没有填0 */
-    luaArr = 5,
+    luaArr,
     /** 数据开始行 */
-    data = 6,
+    data,
 }
 
 export const enum ValueTransType {
