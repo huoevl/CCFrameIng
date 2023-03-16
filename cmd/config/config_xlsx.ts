@@ -38,7 +38,7 @@ export const configBase = {
     configClassPath: "../auto/config/clazz",
 }
 
-/** 前几行的类型 */
+/** 前几行的类型，后面数字代表行数 */
 export const enum RowType {
     /** 客户端还是服务端：c,s */
     cOrs = 1,

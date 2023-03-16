@@ -238,7 +238,6 @@ export class CmdXlsx {
         if (itself.isTsComment) {
             itself.parseXlsxTs(sheetJson);
         }
-        fileUtils.outputJsonSync(_path.join(__dirname, "../", "xlsx", xlsxName + "_xlsx.json"), data);
     }
 
     /**
@@ -615,6 +614,7 @@ export class CmdXlsx {
         }
         for (let rowIndex = range.rowS + 1; rowIndex <= range.rowE; rowIndex++) {
             itself.currXlsxObj.row = rowIndex;
+            let add = range.rowS - 1;
             for (let useIndex = 0, len = headObj.useCols.length; useIndex < len; useIndex++) {
                 let colIndex = headObj.useCols[useIndex];
                 let colChar = itself.getXlsxCharByCol(colIndex);
@@ -623,7 +623,7 @@ export class CmdXlsx {
                 let xlsxValue = data[colChar + rowIndex] as _xlsx.CellObject;
                 let value = (xlsxValue?.w || "").trim().toLowerCase();
                 switch (rowIndex) {
-                    case RowType.field: {
+                    case RowType.field + add: {
                         if (!value) {
                             itself.logErr(true, `未配置字段名`);
                         }
@@ -632,7 +632,7 @@ export class CmdXlsx {
                         }
                         headObj.fields.push(xlsxValue.w);
                     } break;
-                    case RowType.fieldType: {
+                    case RowType.fieldType + add: {
                         if (!value) {
                             itself.logErr(true, `未配置字段类型`);
                         }
@@ -645,13 +645,13 @@ export class CmdXlsx {
                         }
                         headObj.xlsxTypes.push(value)
                     } break;
-                    case RowType.comment: {
+                    case RowType.comment + add: {
                         if (!value) {
                             itself.logErr(false, `注释为空`);
                         }
                         headObj.comment.push(value)
                     } break;
-                    case RowType.luaArr: {
+                    case RowType.luaArr + add: {
                         headObj.luaFields.push(value)
                     } break;
                     default: {
