@@ -1,3 +1,4 @@
+import { FlipType } from "fairygui-cc";
 import _path from "path";
 import _xlsx from "xlsx";
 import * as fileUtils from "../base/FileUtils";
@@ -21,6 +22,7 @@ const enum FieldTypes {
     string = "string",
     localstring = "localstring",//需要处理多语言的字符串
     map = "map",
+    float = "float",
 }
 
 /** xlsx类型对应真实类型数据 */
@@ -312,7 +314,7 @@ export class CmdXlsx {
                 }
                 if (isId) {
                     if (idObj[value]) {
-                        itself.logErr(false, `id重复：${value}，已跳过此行`)
+                        itself.logErr(true, `id重复：${value}`)
                         continue;
                     }
                     idObj[value] = true;
@@ -346,6 +348,15 @@ export class CmdXlsx {
             if (arrLen <= 0) {
                 switch (type) {
                     case "number": {
+                        if (value.indexOf(".") >= 0) {
+                            logErr();
+                        }
+                        result = +value;
+                        if (isNaN(result)) {
+                            logErr();
+                        }
+                    } break;
+                    case FieldTypes.float: {
                         result = +value;
                         if (isNaN(result)) {
                             logErr();
@@ -403,6 +414,15 @@ export class CmdXlsx {
             if (arrLen <= 0) {
                 switch (type) {
                     case "number": {
+                        if (value.indexOf(".") >= 0) {
+                            logErr();
+                        }
+                        result = +value;
+                        if (isNaN(result)) {
+                            logErr();
+                        }
+                    } break;
+                    case FieldTypes.float: {
                         result = +value;
                         if (isNaN(result)) {
                             logErr();
@@ -452,7 +472,7 @@ export class CmdXlsx {
         }
         let typeMap = itself.getReallyType(xlsxType);
         if (typeMap.arrLen < 1) {
-            itself.logErr(false, "不应该不是数组，请检查");
+            itself.logErr(true, "不应该不是数组，请检查");
             return realValue;
         }
         let value: any;
@@ -464,7 +484,7 @@ export class CmdXlsx {
             for (let index = 0, len = realValue.length; index < len; index++) {
                 let attrArr = realValue[index];
                 if (attrArr[2]) {
-                    itself.logErr(false, "属性值配置数量错误");
+                    itself.logErr(true, "属性值配置数量错误");
                 }
                 value[attrArr[0]] = attrArr[1];
             }
@@ -544,6 +564,9 @@ export class CmdXlsx {
         let [result, field, array] = xlsxType.match(/([a-zA-Z]+)(\S*)/);
         let arrLen = (array || "").match(/\[\]+?/g)?.length || 0;
         switch (field) {
+            case FieldTypes.float: {//float不转，提示文件那里转
+
+            } break
             case FieldTypes.int: {
                 field = field.replace(field, "number");
             } break;
@@ -569,6 +592,9 @@ export class CmdXlsx {
                 return field;
             }
             return `Readonly<${readonly(field, --arrLen)}[]>`
+        }
+        if (field == FieldTypes.float) {
+            field = field.replace(field, "number");
         }
         let tsType = readonly(field, arrLen);
         obj.realTsType = tsType;
@@ -640,7 +666,7 @@ export class CmdXlsx {
                         if (array && array != "[]" && array != "[][]" && array != "[][][]") {
                             itself.logErr(true, `数据类型配置错误：${value}`);
                         }
-                        if (field != FieldTypes.int && field != FieldTypes.string && field != FieldTypes.localstring && field != FieldTypes.map) {
+                        if (field != FieldTypes.int && field != FieldTypes.float && field != FieldTypes.string && field != FieldTypes.localstring && field != FieldTypes.map) {
                             itself.logErr(true, `数据类型配置错误：${value}`);
                         }
                         headObj.xlsxTypes.push(value)
@@ -709,6 +735,9 @@ export class CmdXlsx {
                 rowE = "" + Math.max(rowIndex - 1, +rowS);
                 break;
             }
+        }
+        if (+rowE < RowType.data) {
+            itself.logErr(true, "表没数据，请检查（横向空白行，竖向空白列）左边数据范围");
         }
         return {
             colS: colS,

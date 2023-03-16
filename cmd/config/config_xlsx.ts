@@ -47,7 +47,8 @@ export const enum RowType {
     /** 字段 */
     field = 3,
     /** 字段类型，以下为基础类型，数组后面加[]，几维数组就加几个：[]。
-     * int：数字,
+     * int：整数（lua不支持小数混合）,
+     * float：小数
      * string：字符串,
      * localstring：也是字符串，处理多语言，一般是中文需要
      * map：对象类型：{key:value}，也可以是其他JSON.parse能解析的obj
