@@ -95,3 +95,5 @@ export const enum TransType {
     AllTest = 7,
 }
 
+/** excel安全数字范围 */
+export const maxNum = 999999999999999;

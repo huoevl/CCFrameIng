@@ -1,9 +1,8 @@
-import { FlipType } from "fairygui-cc";
 import _path from "path";
 import _xlsx from "xlsx";
 import * as fileUtils from "../base/FileUtils";
 import { logger } from "../base/Logger";
-import { configBase, RowType, TransType, ValueTransType } from "../config/config_xlsx";
+import { configBase, maxNum, RowType, TransType, ValueTransType } from "../config/config_xlsx";
 
 
 /** 客户端服务端类型 */
@@ -306,10 +305,10 @@ export class CmdXlsx {
                 let value = null;
                 switch (configBase.valueTansType) {
                     case ValueTransType.cust: {
-                        value = itself.getXlsxValueCust(xlsxValue.w.trim(), xlsxType);
+                        value = itself.getXlsxValueCust(xlsxValue, xlsxType);
                     } break;
                     default: {
-                        value = itself.getXlsxValueDefault(xlsxValue.w.trim(), xlsxType);
+                        value = itself.getXlsxValueDefault(xlsxValue, xlsxType);
                     } break
                 }
                 if (isId) {
@@ -337,7 +336,7 @@ export class CmdXlsx {
      * @param xlsxType 
      * @returns 
      */
-    private getXlsxValueCust(valueSource: string, xlsxType: string): any {
+    private getXlsxValueCust(valueSource: _xlsx.CellObject, xlsxType: string): any {
         let itself = this;
         let typeObj = itself.getReallyType(xlsxType);
         let logErr = function () {
@@ -348,10 +347,20 @@ export class CmdXlsx {
             if (arrLen <= 0) {
                 switch (type) {
                     case "number": {
-                        if (value.indexOf(".") >= 0) {
-                            logErr();
+                        if (valueSource.t == "n") {
+                            result = valueSource.v;
+                            if (result > maxNum) {
+                                itself.logErr(true, "数字超出安全范围：15个9")
+                            }
+                        } else {
+                            if (value.indexOf(".") >= 0) {
+                                logErr();
+                            }
+                            result = +value;
+                            if (result >= Math.pow(2, 53)) {
+                                itself.logErr(true, "数字超出安全范围：2的53次方")
+                            }
                         }
-                        result = +value;
                         if (isNaN(result)) {
                             logErr();
                         }
@@ -396,14 +405,14 @@ export class CmdXlsx {
                 return arr;
             }
         }
-        return parseResult(valueSource, typeObj.baseType, typeObj.arrLen);
+        return parseResult(valueSource.w.trim(), typeObj.baseType, typeObj.arrLen);
     }
     /**
      * 计算获取正确的数据，原始数据
      * @param value 
      * @param xlsxType 
      */
-    private getXlsxValueDefault(valueSource: string, xlsxType: string): any {
+    private getXlsxValueDefault(valueSource: _xlsx.CellObject, xlsxType: string): any {
         let itself = this;
         let typeObj = itself.getReallyType(xlsxType);
         let logErr = function () {
@@ -414,10 +423,20 @@ export class CmdXlsx {
             if (arrLen <= 0) {
                 switch (type) {
                     case "number": {
-                        if (value.indexOf(".") >= 0) {
-                            logErr();
+                        if (valueSource.t == "n") {
+                            result = valueSource.v;
+                            if (result > maxNum) {
+                                itself.logErr(true, "数字超出安全范围：15个9")
+                            }
+                        } else {
+                            if (value.indexOf(".") >= 0) {
+                                logErr();
+                            }
+                            result = +value;
+                            if (result >= Math.pow(2, 53)) {
+                                itself.logErr(true, "数字超出安全范围：2的53次方")
+                            }
                         }
-                        result = +value;
                         if (isNaN(result)) {
                             logErr();
                         }
@@ -453,7 +472,7 @@ export class CmdXlsx {
             }
             return arr;
         }
-        return parseResult(valueSource, typeObj.baseType, typeObj.arrLen);
+        return parseResult(valueSource.w.trim(), typeObj.baseType, typeObj.arrLen);
     }
 
     private getLuaValue(realValue: any, fields: string, xlsxType: string) {
@@ -652,6 +671,9 @@ export class CmdXlsx {
                     case RowType["field"] + add: {
                         if (!value) {
                             itself.logErr(true, `未配置字段名`);
+                        }
+                        if (value.match(/[\u4400-\u9fa5]/)) {
+                            itself.logErr(true, "字段存在中文！")
                         }
                         if (headObj.fields.indexOf(value) >= 0) {
                             itself.logErr(true, `字段名重复：${value}`);
