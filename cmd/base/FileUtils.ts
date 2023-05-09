@@ -22,13 +22,37 @@ export function isDir(src: string) {
 }
 /**
  * 获取文件夹内容
- * @param src 
+ * @param src 路径
+ * @param stuffs 文件后缀列表，不传则所有
+ * @param deep 文件夹深度 1为当前文件夹
+ * @returns 
  */
-export function getDirList(src: string) {
-    if (this.isDir(src)) {
-        return _fse.readdirSync(src);
+export function getDirList(src: string, stuffs?: string[], deep?: number) {
+    let result = [];
+    stuffs = stuffs || [];
+    if (isDir(src)) {
+        if (deep != void 0) {
+            if (deep <= 0) {
+                return result;
+            }
+            deep--;
+        }
+        let list = _fse.readdirSync(src);
+        for (let index = 0, len = list.length; index < len; index++) {
+            let fileName = list[index];
+            result.push.apply(result, getDirList(_path.join(src, fileName), stuffs, deep))
+        }
+    } else {
+        let stuff = _path.extname(src);
+        if (stuffs.length) {
+            if (stuffs.indexOf(stuff) >= 0) {
+                result.push(src);
+            }
+        } else {
+            result.push(src);
+        }
     }
-    return [];
+    return result;
 }
 /**
  * 把obj转lua写入文件
