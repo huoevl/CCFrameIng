@@ -60,15 +60,7 @@ export function getDirList(src: string, stuffs?: string[], deep?: number) {
  * @param jsonData obj数据
  */
 export function outputJsonToLuaSync(src: string, jsonData: object) {
-    let keyIsInt = false;
-    for (let key in jsonData) {
-        if (key == "-1") {
-            continue;
-        }
-        keyIsInt = jsonData[key]["id"].constructor == Number;
-        break;
-    }
-    let content = _jsonToLua.jsObjectToLuaPretty(jsonData, 1, keyIsInt);
+    let content = _jsonToLua.jsObjectToLuaPretty(jsonData, 1);
     content = `local t =${content}\nreturn t`;
     content = content.replace(/"__nil__"/g, "nil");
     content = content.replace(/"\""/g, "\\\"")
