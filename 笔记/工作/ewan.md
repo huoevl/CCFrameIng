@@ -6,16 +6,19 @@
 4. 同上：颜色是否可以配表，读取====> ``` XXXConst.Id_Style.style_xxx ```
 5. 封装按钮：直接在类里面  ``` tap_btn_xxx( ){  }```
    <br>同理可以封装其他： ``` click_list_xxx(){} ``` 点击列表项
-6. 一些写法 <br> 
+6. 一些写法    
     ```typescript
-   openView(xxx, param1,param2,param3)  ======>
+   openView(xxx, param1,param2,param3)  ===改为===>
    interface IData_xxx{
        param1:number,
        param2:string,
        param3:number,
-   } <br>
+   }     
    openView(xxx, {param1,param2,param3}as IData_xxx)
    ```
 > 2023.3.1   
 1. 换个转表工具，用excel，做好类型定义，不允许随意配置，多语言
-2. 
+> 2023.5
+1. 策划修改需求同步美术但是不同步客户端
+2. 美术出图漏图
+3. 
