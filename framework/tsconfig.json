@@ -7,7 +7,7 @@
         "experimentalDecorators": true,
         "skipLibCheck": true,
         "moduleResolution":"node",
-        "module": "system",
+        "module": "System",
         "lib": [
             "es5",
             "dom",

@@ -1,7 +1,12 @@
-import { AssetManager, Component, Node, view } from "cc";
-import * as fgui from "fairygui-cc";
-export class UIUtils {
-    static bundle: AssetManager.Bundle;
+import { Component, Node } from "cc";
+
+declare global {
+    interface IModuleMap {
+        UITool: typeof UITool
+    }
+}
+
+export class UITool {
     /** 界面组件绑定 */
     static bindNode(comp: Component) {
         let compDefinde = comp["compDefinde"];
