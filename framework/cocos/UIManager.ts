@@ -98,7 +98,7 @@ export class UIManager extends SingleClass {
      * @param force 是否强制
      */
     close(uiComp: Component, force?: boolean) {
-
+        //todo
     }
     /**
      * 获取顶层的界面
