@@ -3,6 +3,7 @@
 
 import { Component } from "cc";
 import { ccf } from "../base/CCF";
+import { LayerType } from "../base/Const";
 import { SingleClass } from "../base/SingleClass";
 
 
@@ -12,17 +13,7 @@ declare global {
         UIMgr?: UIManager;
     }
 }
-/** 层级类型 */
-export const enum LayerType {
-    /** 互斥 */
-    MutEx,
-    /** 全屏 */
-    Full,
-    /** 弹窗 */
-    Dialog,
-    /** 提示 */
-    Tips,
-}
+
 export class UIManager extends SingleClass {
     /** root节点 */
     root: Node;
