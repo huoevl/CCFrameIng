@@ -6,6 +6,7 @@
     "strict": false,
     "suppressImplicitAnyIndexErrors": false,
     "noImplicitAny": false,
+    "outDir": "framework",
     // "isolatedModules": false,
     "allowSyntheticDefaultImports": true
   },

@@ -6,6 +6,7 @@
   "name": "CCFrameIng",
   "uuid": "18655db9-d31c-47e6-ae58-ec6c53fde256",
   "version": "3.6.2",
+  "type": "module",
   "dependencies": {
     "fairygui-cc": "^1.1.1"
   }

@@ -2,7 +2,7 @@
     "compilerOptions": {
         "target": "es5",
         "declaration": true,
-        "outFile": "../assets/libs/ccfi.js",
+        "outFile": "../assets/libs/ccf.js",
         "allowJs": true,
         "experimentalDecorators": true,
         "skipLibCheck": true,
