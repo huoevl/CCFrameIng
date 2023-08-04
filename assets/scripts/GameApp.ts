@@ -1,5 +1,6 @@
-import { CCF } from 'base/CCF';
+
 import { AssetManager, assetManager, Component, instantiate, Prefab, _decorator } from 'cc';
+import { CCF } from 'exports/base';
 import { UIUtils } from './base/utils/UIUtils';
 const { ccclass, property } = _decorator;
 @ccclass('GameApp')

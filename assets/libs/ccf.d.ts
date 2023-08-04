@@ -1,3 +1,13 @@
+declare module "cc" {
+    interface Component {
+        /** 相对路径 */
+        URL: string;
+        /** 包名/文件夹名/模块名 */
+        PKG: string;
+        /** 类名 */
+        NAME: string;
+    }
+}
 declare module "base/SingleClass" {
     export class SingleClass {
         private static instance;
@@ -212,78 +222,17 @@ declare module "base/DateExt" {
     export class DataExt extends SingleClass {
     }
 }
-declare namespace CCF {
-    class Thents {
-        /** 是否停止 */
-        private isStop;
-        /** 执行顺序数据 */
-        private execList;
-        /** 是否正在执行 */
-        private isExec;
-        /** 链式核心continuation 函数 */
-        private cont;
-        /** 函数结尾 */
-        private fin;
-        /** 异步流程控制库 cb里的参数不能是函数，否则不能停止*/
-        constructor();
-        /** cb回调 当它执行说明进行下一链 any数组也仅执行一次*/
-        private continuation;
-        /** 函数 顺序执行 */
-        add(fn?: (cb: Function) => any): this;
-        /** 将 array 中的值应用于 iterator 函数（同步或异步），并行执行 */
-        each(arr?: any[], iterator?: (cb: Function, value?: any, index?: number, array?: any[]) => any): this;
-        /** 将 array 中的值应用于 iterator 函数（同步或异步），并行执行，最大并行数量为 limit */
-        eachLimit(arr?: any[], iterator?: (cb: Function, value?: any, index?: number, array?: any[]) => any, limit?: number): this;
-        /** 将 array 中的值应用于 iterator 函数（同步或异步），串行执行 */
-        eachSeries(arr?: any[], iterator?: (cb: Function, value?: any, index?: number, array?: any[]) => any): this;
-        /** 函数数组（同步或异步），并行执行 */
-        parallel(tasks?: ((cb: Function) => any)[]): this;
-        /** 函数数组（同步或异步），并行执行，最大并行数量为 limit 不传或者0为不限制 */
-        parallelLimit(tasks?: ((cb: Function) => any)[], limit?: number): this;
-        /** 函数数组（同步或异步），串行执行 */
-        parallelSeries(tasks?: ((cb: Function) => any)[]): this;
-        /** 无论上一链是否存在 error，均进入 fn 执行 */
-        finally(fn?: (cb?: Function, err?: any) => any): this;
-        /** 用于捕捉 error */
-        private onError;
-        /** 数组error */
-        private onErrorArr;
-        /** 用户自定义cb reson */
-        private onOver;
-        private addToList;
-        /** 开始执行顺序流 */
-        start(): void;
-        /** 停止执行 */
-        stop(fn?: Function, reson?: any): void;
-        /** 遍历执行 */
-        private forList;
-        private arrToFunction;
-        private parallelExec;
-        private parallelLimitExec;
-        private parallelSeriesExec;
-        FinExec(err?: any): void;
-        /** 同步执行函数 */
-        private carry;
-        /** 异步执行函数 同时捕捉异常 */
-        private defer;
-        /** 异步执行函数 */
-        private nextTick;
-        /**
-         * 将 `arguments` 转成数组，效率比 `[].slice.call` 高很多
-         * https://github.com/teambition/then.js/blob/master/then.js
-         */
-        private slice;
-    }
+declare module "base/index" {
+    export * from "base/CCF";
+    export * from "base/Const";
+    export * from "base/DateExt";
+    export * from "base/LogExt";
+    export * from "base/MathExt";
+    export * from "base/ObjectExt";
+    export * from "base/SingleClass";
 }
-declare module "cc" {
-    interface Component {
-        /** 相对路径 */
-        URL: string;
-        /** 包名/文件夹名/模块名 */
-        PKG: string;
-        /** 类名 */
-        NAME: string;
-    }
+declare module "exports/base" {
+    export * from "base/index";
 }
 declare module "cocos/StateEnum" {
     /** 状态名 */
@@ -555,7 +504,14 @@ declare module "cocos/StateController" {
         private updateState;
     }
 }
-declare module "fgui/PkgMgr" {
-    export class PkgMgr {
-    }
+declare module "cocos/index" {
+    export * from "cocos/ResManager";
+    export * from "cocos/StateController";
+    export * from "cocos/StateEnum";
+    export * from "cocos/StateSelect";
+    export * from "cocos/UIManager";
+    export * from "cocos/UITool";
+}
+declare module "exports/cocos" {
+    export * from "cocos/index";
 }

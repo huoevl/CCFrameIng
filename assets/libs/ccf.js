@@ -19,6 +19,7 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
     else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
     return c > 3 && r && Object.defineProperty(target, key, r), r;
 };
+//组件扩展
 System.register("base/SingleClass", [], function (exports_1, context_1) {
     "use strict";
     var SingleClass;
@@ -550,398 +551,75 @@ System.register("base/DateExt", ["base/SingleClass"], function (exports_11, cont
         }
     };
 });
-var CCF;
-(function (CCF) {
-    var Thents = /** @class */ (function () {
-        /** 异步流程控制库 cb里的参数不能是函数，否则不能停止*/
-        function Thents() {
-            var self = this;
-            self.isStop = false;
-            self.isExec = false;
-            self.execList = [];
-            self.cont = self.continuation;
-            self.fin = null;
+System.register("base/index", ["base/CCF", "base/Const", "base/DateExt", "base/LogExt", "base/MathExt", "base/ObjectExt", "base/SingleClass"], function (exports_12, context_12) {
+    "use strict";
+    var __moduleName = context_12 && context_12.id;
+    function exportStar_1(m) {
+        var exports = {};
+        for (var n in m) {
+            if (n !== "default") exports[n] = m[n];
         }
-        /** cb回调 当它执行说明进行下一链 any数组也仅执行一次*/
-        Thents.prototype.continuation = function (reson, value) {
-            var self = this;
-            if (reson != undefined && (Object.prototype.toString.call(reson) !== "[object Function]")) {
-                self.onOver(reson);
-                return;
+        exports_12(exports);
+    }
+    return {
+        setters: [
+            function (CCF_3_1) {
+                exportStar_1(CCF_3_1);
+            },
+            function (Const_1_1) {
+                exportStar_1(Const_1_1);
+            },
+            function (DateExt_1_1) {
+                exportStar_1(DateExt_1_1);
+            },
+            function (LogExt_2_1) {
+                exportStar_1(LogExt_2_1);
+            },
+            function (MathExt_2_1) {
+                exportStar_1(MathExt_2_1);
+            },
+            function (ObjectExt_2_1) {
+                exportStar_1(ObjectExt_2_1);
+            },
+            function (SingleClass_7_1) {
+                exportStar_1(SingleClass_7_1);
             }
-            self.forList();
-        };
-        //===================public外部类=================================
-        /** 函数 顺序执行 */
-        Thents.prototype.add = function (fn) {
-            var self = this;
-            self.addToList(1 /* ExecType.add */, [fn]);
-            return self;
-        };
-        /** 将 array 中的值应用于 iterator 函数（同步或异步），并行执行 */
-        Thents.prototype.each = function (arr, iterator) {
-            var self = this;
-            self.addToList(2 /* ExecType.each */, arr, iterator);
-            return self;
-        };
-        /** 将 array 中的值应用于 iterator 函数（同步或异步），并行执行，最大并行数量为 limit */
-        Thents.prototype.eachLimit = function (arr, iterator, limit) {
-            var self = this;
-            self.addToList(3 /* ExecType.eachLimit */, arr, iterator, limit);
-            return self;
-        };
-        /** 将 array 中的值应用于 iterator 函数（同步或异步），串行执行 */
-        Thents.prototype.eachSeries = function (arr, iterator) {
-            var self = this;
-            self.addToList(4 /* ExecType.eachSeries */, arr, iterator);
-            return self;
-        };
-        /** 函数数组（同步或异步），并行执行 */
-        Thents.prototype.parallel = function (tasks) {
-            var self = this;
-            self.addToList(5 /* ExecType.parallel */, tasks);
-            return self;
-        };
-        /** 函数数组（同步或异步），并行执行，最大并行数量为 limit 不传或者0为不限制 */
-        Thents.prototype.parallelLimit = function (tasks, limit) {
-            var self = this;
-            self.addToList(6 /* ExecType.parallelLimit */, tasks, null, limit);
-            return self;
-        };
-        /** 函数数组（同步或异步），串行执行 */
-        Thents.prototype.parallelSeries = function (tasks) {
-            var self = this;
-            self.addToList(7 /* ExecType.parallelSeries */, tasks);
-            return self;
-        };
-        /** 无论上一链是否存在 error，均进入 fn 执行 */
-        Thents.prototype.finally = function (fn) {
-            var self = this;
-            self.fin = fn;
-            return self;
-        };
-        /** 用于捕捉 error */
-        Thents.prototype.onError = function (err) {
-            console.error("Quque catch error : ", err);
-            throw err;
-        };
-        /** 数组error */
-        Thents.prototype.onErrorArr = function (obj, method) {
-            var self = this;
-            var err = new Error('The argument ' + (obj && obj.toString()) + ' in "' + method + '" is not Array!');
-            if (self.fin) {
-                self.FinExec(err);
+        ],
+        execute: function () {
+        }
+    };
+});
+System.register("exports/base", ["base/index"], function (exports_13, context_13) {
+    "use strict";
+    var __moduleName = context_13 && context_13.id;
+    function exportStar_2(m) {
+        var exports = {};
+        for (var n in m) {
+            if (n !== "default") exports[n] = m[n];
+        }
+        exports_13(exports);
+    }
+    return {
+        setters: [
+            function (base_1_1) {
+                exportStar_2(base_1_1);
             }
-            else {
-                throw err;
-            }
-        };
-        /** 用户自定义cb reson */
-        Thents.prototype.onOver = function (reson) {
-            console.error("结束: ", reson);
-        };
-        Thents.prototype.addToList = function (type, list, iterator, limit) {
-            var self = this;
-            var map = {};
-            map.type = type;
-            map.list = list;
-            map.iterator = iterator;
-            map.limit = limit;
-            self.execList.push(map);
-        };
-        //===================逻辑开始=================================
-        /** 开始执行顺序流 */
-        Thents.prototype.start = function () {
-            var self = this;
-            if (self.isExec) {
-                self.onError("已经在执行中...");
-                return;
-            }
-            self.isExec = true;
-            self.isStop = false;
-            self.forList();
-        };
-        /** 停止执行 */
-        Thents.prototype.stop = function (fn, reson) {
-            var self = this;
-            if (fn) {
-                self.carry(null, fn);
-            }
-            self.isStop = true;
-            self.isExec = false;
-            self.cont(reson);
-        };
-        /** 遍历执行 */
-        Thents.prototype.forList = function () {
-            var self = this;
-            if (self.isStop) {
-                return; //停止
-            }
-            if (!self.execList.length) { //结束
-                if (self.fin) {
-                    self.FinExec();
-                }
-                return;
-            }
-            var map = self.execList.shift();
-            switch (map.type) {
-                case 1 /* ExecType.add */:
-                    {
-                        var fn = map.list[0];
-                        self.carry(null, fn, self.cont.bind(self));
-                    }
-                    break;
-                case 2 /* ExecType.each */:
-                    {
-                        self.defer(null, function () {
-                            self.carry(null, self.parallelExec.bind(self), self.arrToFunction(map.list, map.iterator));
-                        });
-                    }
-                    break;
-                case 3 /* ExecType.eachLimit */:
-                    {
-                        self.defer(null, function () {
-                            self.carry(null, self.parallelLimitExec.bind(self), self.arrToFunction(map.list, map.iterator), map.limit);
-                        });
-                    }
-                    break;
-                case 4 /* ExecType.eachSeries */:
-                    {
-                        self.defer(null, function () {
-                            self.carry(null, self.parallelSeriesExec.bind(self), self.arrToFunction(map.list, map.iterator));
-                        });
-                    }
-                    break;
-                case 5 /* ExecType.parallel */:
-                    {
-                        self.defer(null, function () {
-                            self.carry(null, self.parallelExec.bind(self), map.list);
-                        });
-                    }
-                    break;
-                case 6 /* ExecType.parallelLimit */:
-                    {
-                        self.defer(null, function () {
-                            self.carry(null, self.parallelLimitExec.bind(self), map.list, map.limit);
-                        });
-                    }
-                    break;
-                case 7 /* ExecType.parallelSeries */:
-                    {
-                        self.defer(null, function () {
-                            self.carry(null, self.parallelSeriesExec.bind(self), map.list);
-                        });
-                    }
-                    break;
-                default:
-                    {
-                        self.onError("非法错误");
-                        return;
-                    }
-                    break;
-            }
-        };
-        //===================执行类=================================
-        Thents.prototype.arrToFunction = function (arr, iterator) {
-            var fnArr = [];
-            var fn = function (value, index, array) {
-                return function (cb) {
-                    iterator(cb, value, index, array);
-                };
-            };
-            for (var i = 0; i < arr.length; i++) {
-                fnArr.push(fn(arr[i], i, arr));
-            }
-            return fnArr;
-        };
-        Thents.prototype.parallelExec = function (tasks) {
-            var self = this;
-            if (Object.prototype.toString.call(tasks) !== "[object Array]") {
-                return self.onErrorArr(tasks, 'parallel');
-            }
-            var len = tasks.length;
-            if (len <= 0) {
-                return self.cont();
-            }
-            for (var i = 0, length_1 = len; i < length_1; i++) {
-                self.carry(null, tasks[i], getNext(i));
-            }
-            function getNext(index) {
-                function next(err, value) {
-                    if (len <= 0)
-                        return;
-                    if (err) {
-                        len = 0;
-                        self.cont(err);
-                    }
-                    else {
-                        return !--len && self.cont();
-                    }
-                }
-                return next;
-            }
-        };
-        Thents.prototype.parallelLimitExec = function (tasks, limit) {
-            var self = this;
-            if (!limit) {
-                self.parallelExec(tasks);
-                return;
-            }
-            if (Object.prototype.toString.call(tasks) !== "[object Array]") {
-                return self.onErrorArr(tasks, 'parallelLimit');
-            }
-            var len = tasks.length;
-            if (len <= 0) {
-                return self.cont();
-            }
-            if (len < limit) {
-                limit = len;
-            }
-            var tempIndex = limit - 1;
-            for (var i = 0; i < limit; i++) {
-                self.defer(null, tasks[i], getNext(i));
-            }
-            function getNext(index) {
-                function next(err, value) {
-                    if (len <= 0)
-                        return;
-                    if (err) {
-                        len = 0;
-                        self.cont(err);
-                    }
-                    else {
-                        ++tempIndex;
-                        var fn = tasks[tempIndex];
-                        fn && self.defer(null, fn, getNext(tempIndex));
-                        return !--len && self.cont();
-                    }
-                }
-                return next;
-            }
-        };
-        Thents.prototype.parallelSeriesExec = function (tasks) {
-            var self = this;
-            if (Object.prototype.toString.call(tasks) !== "[object Array]") {
-                return self.onErrorArr(tasks, 'parallelSeries');
-                ;
-            }
-            var len = tasks.length;
-            if (len <= 0) {
-                return self.cont();
-            }
-            var tempIndex = 0;
-            self.carry(null, tasks[tempIndex], getNext(tempIndex));
-            function getNext(index) {
-                function next(err, value) {
-                    if (len <= 0)
-                        return;
-                    if (err) {
-                        len = 0;
-                        self.cont(err);
-                    }
-                    else {
-                        ++tempIndex;
-                        var fn = tasks[tempIndex];
-                        fn && self.carry(null, fn, getNext(tempIndex));
-                        return !--len && self.cont();
-                    }
-                }
-                return next;
-            }
-        };
-        Thents.prototype.FinExec = function (err) {
-            var self = this;
-            self.fin(function (error) {
-                if (error) {
-                    self.cont(error);
-                }
-                else {
-                    return self.cont();
-                }
-            }, err);
-        };
-        //===================工具类=================================
-        /** 同步执行函数 */
-        Thents.prototype.carry = function (errorHandler, fn) {
-            var param = [];
-            for (var _i = 2; _i < arguments.length; _i++) {
-                param[_i - 2] = arguments[_i];
-            }
-            var self = this;
-            if (self.isStop) {
-                return;
-            }
-            try {
-                fn.apply(null, self.slice(arguments, 2));
-            }
-            catch (err) {
-                if (self.fin) {
-                    self.FinExec(err);
-                    return;
-                }
-                if (errorHandler) {
-                    errorHandler(err);
-                }
-                else {
-                    self.onError(err);
-                }
-            }
-        };
-        /** 异步执行函数 同时捕捉异常 */
-        Thents.prototype.defer = function (errorHandler, fn) {
-            var param = [];
-            for (var _i = 2; _i < arguments.length; _i++) {
-                param[_i - 2] = arguments[_i];
-            }
-            var self = this;
-            if (self.isStop) {
-                return;
-            }
-            var args = arguments;
-            self.nextTick(function () {
-                self.carry.apply(self, args);
-            });
-        };
-        /** 异步执行函数 */
-        Thents.prototype.nextTick = function (fn) {
-            var param = [];
-            for (var _i = 1; _i < arguments.length; _i++) {
-                param[_i - 1] = arguments[_i];
-            }
-            var self = this;
-            var arr = self.slice(arguments, 1);
-            setTimeout(fn, 0, arr);
-        };
-        /**
-         * 将 `arguments` 转成数组，效率比 `[].slice.call` 高很多
-         * https://github.com/teambition/then.js/blob/master/then.js
-         */
-        Thents.prototype.slice = function (args, start) {
-            start = start || 0;
-            if (start >= args.length)
-                return [];
-            var len = args.length;
-            var ret = Array(len - start);
-            while (len-- > start)
-                ret[len - start] = args[len];
-            return ret;
-        };
-        return Thents;
-    }());
-    CCF.Thents = Thents;
-})(CCF || (CCF = {}));
-//组件扩展
-System.register("cocos/StateEnum", [], function (exports_12, context_12) {
+        ],
+        execute: function () {
+        }
+    };
+});
+System.register("cocos/StateEnum", [], function (exports_14, context_14) {
     "use strict";
     var EnumStateName, EnumUpdataType, EnumCtrlName, EnumPropName;
-    var __moduleName = context_12 && context_12.id;
+    var __moduleName = context_14 && context_14.id;
     return {
         setters: [],
         execute: function () {
             /** 状态名 */
             (function (EnumStateName) {
             })(EnumStateName || (EnumStateName = {}));
-            exports_12("EnumStateName", EnumStateName);
+            exports_14("EnumStateName", EnumStateName);
             /** 更新选择器的类型 */
             (function (EnumUpdataType) {
                 /** 名字 */
@@ -957,11 +635,11 @@ System.register("cocos/StateEnum", [], function (exports_12, context_12) {
                 /** 更新选中的属性 */
                 EnumUpdataType[EnumUpdataType["prop"] = 5] = "prop";
             })(EnumUpdataType || (EnumUpdataType = {}));
-            exports_12("EnumUpdataType", EnumUpdataType);
+            exports_14("EnumUpdataType", EnumUpdataType);
             /** 控制器名字 */
             (function (EnumCtrlName) {
             })(EnumCtrlName || (EnumCtrlName = {}));
-            exports_12("EnumCtrlName", EnumCtrlName);
+            exports_14("EnumCtrlName", EnumCtrlName);
             /** 属性名 */
             (function (EnumPropName) {
                 /** 不选择 */
@@ -995,7 +673,7 @@ System.register("cocos/StateEnum", [], function (exports_12, context_12) {
                 /** 字体 */
                 EnumPropName[EnumPropName["Font"] = 13] = "Font";
             })(EnumPropName || (EnumPropName = {}));
-            exports_12("EnumPropName", EnumPropName);
+            exports_14("EnumPropName", EnumPropName);
         }
     };
 });
@@ -1028,10 +706,10 @@ System.register("cocos/StateEnum", [], function (exports_12, context_12) {
  *      }
  *
  */
-System.register("cocos/StateSelect", ["cc", "cc/env", "cocos/StateController", "cocos/StateEnum"], function (exports_13, context_13) {
+System.register("cocos/StateSelect", ["cc", "cc/env", "cocos/StateController", "cocos/StateEnum"], function (exports_15, context_15) {
     "use strict";
     var cc_2, env_1, StateController_1, StateEnum_1, ccclass, property, executeInEditMode, disallowMultiple, StateSelect;
-    var __moduleName = context_13 && context_13.id;
+    var __moduleName = context_15 && context_15.id;
     return {
         setters: [
             function (cc_2_1) {
@@ -2140,7 +1818,7 @@ System.register("cocos/StateSelect", ["cc", "cc/env", "cocos/StateController", "
                 ], StateSelect);
                 return StateSelect;
             }(cc_2.Component));
-            exports_13("StateSelect", StateSelect);
+            exports_15("StateSelect", StateSelect);
         }
     };
 });
@@ -2163,10 +1841,10 @@ System.register("cocos/StateSelect", ["cc", "cc/env", "cocos/StateController", "
  * 4、不能使用ctrl+z（撤销），否则一些数据会没掉,
  * 5、好像删除不可逆
  */
-System.register("cocos/StateController", ["cc", "cc/env", "cocos/StateEnum", "cocos/StateSelect"], function (exports_14, context_14) {
+System.register("cocos/StateController", ["cc", "cc/env", "cocos/StateEnum", "cocos/StateSelect"], function (exports_16, context_16) {
     "use strict";
     var cc_3, env_2, StateEnum_2, StateSelect_1, ccclass, property, executeInEditMode, StateValue, StateController;
-    var __moduleName = context_14 && context_14.id;
+    var __moduleName = context_16 && context_16.id;
     return {
         setters: [
             function (cc_3_1) {
@@ -2222,7 +1900,7 @@ System.register("cocos/StateController", ["cc", "cc/env", "cocos/StateEnum", "co
                 ], StateValue);
                 return StateValue;
             }());
-            exports_14("StateValue", StateValue);
+            exports_16("StateValue", StateValue);
             StateController = /** @class */ (function (_super) {
                 __extends(StateController, _super);
                 function StateController() {
@@ -2475,23 +2153,63 @@ System.register("cocos/StateController", ["cc", "cc/env", "cocos/StateEnum", "co
                 ], StateController);
                 return StateController;
             }(cc_3.Component));
-            exports_14("StateController", StateController);
+            exports_16("StateController", StateController);
         }
     };
 });
-System.register("fgui/PkgMgr", [], function (exports_15, context_15) {
+System.register("cocos/index", ["cocos/ResManager", "cocos/StateController", "cocos/StateEnum", "cocos/StateSelect", "cocos/UIManager", "cocos/UITool"], function (exports_17, context_17) {
     "use strict";
-    var PkgMgr;
-    var __moduleName = context_15 && context_15.id;
+    var __moduleName = context_17 && context_17.id;
+    function exportStar_3(m) {
+        var exports = {};
+        for (var n in m) {
+            if (n !== "default") exports[n] = m[n];
+        }
+        exports_17(exports);
+    }
     return {
-        setters: [],
+        setters: [
+            function (ResManager_2_1) {
+                exportStar_3(ResManager_2_1);
+            },
+            function (StateController_3_1) {
+                exportStar_3(StateController_3_1);
+            },
+            function (StateEnum_3_1) {
+                exportStar_3(StateEnum_3_1);
+            },
+            function (StateSelect_2_1) {
+                exportStar_3(StateSelect_2_1);
+            },
+            function (UIManager_2_1) {
+                exportStar_3(UIManager_2_1);
+            },
+            function (UITool_2_1) {
+                exportStar_3(UITool_2_1);
+            }
+        ],
         execute: function () {
-            PkgMgr = /** @class */ (function () {
-                function PkgMgr() {
-                }
-                return PkgMgr;
-            }());
-            exports_15("PkgMgr", PkgMgr);
         }
     };
 });
+System.register("exports/cocos", ["cocos/index"], function (exports_18, context_18) {
+    "use strict";
+    var __moduleName = context_18 && context_18.id;
+    function exportStar_4(m) {
+        var exports = {};
+        for (var n in m) {
+            if (n !== "default") exports[n] = m[n];
+        }
+        exports_18(exports);
+    }
+    return {
+        setters: [
+            function (cocos_1_1) {
+                exportStar_4(cocos_1_1);
+            }
+        ],
+        execute: function () {
+        }
+    };
+});
+// export * from '../fgui';
