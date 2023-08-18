@@ -116,7 +116,7 @@ export class CmdXlsx {
         itself.isTsComment = Boolean(configBase.tansType & TransType.clientTs);
 
         let dir = _path.join(__dirname, configBase.xlsxPath);
-        let dirlist = fileUtils.getDirList(dir);
+        let dirlist = fileUtils.getFiles(dir);
         logger.info(dirlist)
         for (let index = 0, len = dirlist.length; index < len; index++) {
             let name = dirlist[index];

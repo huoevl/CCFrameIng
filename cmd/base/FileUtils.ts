@@ -1,8 +1,8 @@
 
 import * as _fse from "fs-extra";
-import { logger } from "./Logger";
 import * as _jsonToLua from "json_to_lua";
 import * as _path from "path";
+import { logger } from "./Logger";
 //继承模块
 export * from "fs-extra";
 
@@ -27,7 +27,7 @@ export function isDir(src: string) {
  * @param deep 文件夹深度 1为当前文件夹
  * @returns 
  */
-export function getDirList(src: string, stuffs?: string[], deep?: number) {
+export function getFiles(src: string, stuffs?: string[], deep?: number) {
     let result = [];
     stuffs = stuffs || [];
     if (isDir(src)) {
@@ -40,7 +40,7 @@ export function getDirList(src: string, stuffs?: string[], deep?: number) {
         let list = _fse.readdirSync(src);
         for (let index = 0, len = list.length; index < len; index++) {
             let fileName = list[index];
-            result.push.apply(result, getDirList(_path.join(src, fileName), stuffs, deep))
+            result.push.apply(result, getFiles(_path.join(src, fileName), stuffs, deep))
         }
     } else {
         let stuff = _path.extname(src);
