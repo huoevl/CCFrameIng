@@ -43,3 +43,5 @@
 39. [Unity 资源导入管道](https://github.com/daihenka/asset-pipeline)
 40. [矩阵和图表](https://thepalindrome.org/p/matrices-and-graphs)
 41. [.NET 的哈希数组映射 Trie 实现](https://github.com/alexandrnikitin/HAMT.NET)
+42. [ShaderOneSweep](https://github.com/b0nes164/ShaderOneSweep)
+43. [wesome Unity Games](https://github.com/akinmustafa/awesome-unity-games)

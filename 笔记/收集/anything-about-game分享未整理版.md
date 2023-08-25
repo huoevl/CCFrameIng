@@ -1920,3 +1920,13 @@ https://github.com/Unity-UI-Extensions/com.unity.uiextensions, 刚想分享一�
 https://frugalcafe.beehiiv.com/
 
 https://blog.selfshadow.com/2023/08/12/siggraph-2023-links
+
+https://github.com/b0nes164/ShaderOneSweep
+https://github.com/akinmustafa/awesome-unity-games
+https://github.com/Nyrest/FastGenericNew
+https://graphics.pixar.com/library/
+https://assetstore.unity.com/packages/2d/characters/2d-pixel-unit-maker-spum-188715
+https://learn.microsoft.com/zh-cn/dotnet/csharp/tutorials/string-interpolation
+https://unity.cn/tuanjie/tuanjieyinqing
+图形学资源 - Ming的文章 - 知乎
+https://zhuanlan.zhihu.com/p/652183464

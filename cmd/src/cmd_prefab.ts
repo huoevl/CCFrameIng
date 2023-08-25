@@ -89,6 +89,11 @@ export class CmdPrefab {
     private clazzAllData: { [name: string]: TAllPrefab } = {};
     /** 当前解析的模块 */
 
+    /**
+     * 执行
+     * @param moduleName 模块名 
+     * @param fileName 预制体名
+     */
     exec(moduleName: string, fileName?: string) {
         let itself = this;
         itself.parsePrefabPath();
@@ -581,3 +586,5 @@ export class CmdPrefab {
         return importStr;
     }
 }
+
+let cmd_prefab = new CmdPrefab();
